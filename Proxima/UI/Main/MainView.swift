@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct RootView: View {
@@ -36,11 +37,11 @@ struct MainView: View {
         }
         .searchable(text: $session.search, placement: .sidebar, prompt: "Guests, tags, nodes")
         .navigationTitle(session.server.displayName)
-        .alert(session.alert?.title ?? "", isPresented: Binding { session.alert != nil } set: { if !$0 { session.alert = nil } },
-               presenting: session.alert) { _ in
-            Button("OK") {}
-        } message: { alert in
-            Text(alert.message)
+        // A SwiftUI alert waits until an open sheet closes, and most failures happen inside a sheet (a wizard, a form),
+        // which then looks frozen. AppKit can stack the alert on top of whatever sheet is showing.
+        .onChange(of: session.alert?.id) {
+            guard let item = session.alert else { return }
+            Self.present(item) { if session.alert?.id == item.id { session.alert = nil } }
         }
         .confirmationDialog(session.confirmation?.title ?? "", isPresented: Binding { session.confirmation != nil } set: { if !$0 { session.confirmation = nil } },
                             presenting: session.confirmation) { confirmation in
@@ -292,5 +293,23 @@ struct ReauthSheet: View {
         } catch {
             self.error = (error as? PVEError)?.isAuthenticationFailure == true ? "That didn't work. Check and try again." : error.localizedDescription
         }
+    }
+}
+
+extension MainView {
+    /// Shows an alert on the top-most sheet of the session's window, or on the window itself.
+    static func present(_ item: AlertItem, done: @escaping () -> Void) {
+        let alert = NSAlert()
+        alert.messageText = item.title
+        alert.informativeText = item.message
+        alert.addButton(withTitle: "OK")
+        let root = NSApp.keyWindow?.sheetParent ?? NSApp.keyWindow ?? NSApp.mainWindow
+            ?? NSApp.windows.first { $0.isVisible && $0.sheetParent == nil && $0.canBecomeMain }
+        guard var window = root else {
+            alert.runModal()
+            return done()
+        }
+        while let sheet = window.attachedSheet { window = sheet }
+        alert.beginSheetModal(for: window) { _ in done() }
     }
 }
