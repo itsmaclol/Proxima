@@ -11,7 +11,7 @@
 <p align="center">
   <img alt="macOS 26" src="https://img.shields.io/badge/macOS-26%20Tahoe-black?logo=apple">
   <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white">
-  <img alt="Proxmox VE 8 and 9" src="https://img.shields.io/badge/Proxmox%20VE-8%20%7C%209-E57000?logo=proxmox&logoColor=white">
+  <img alt="Proxmox VE 9" src="https://img.shields.io/badge/Proxmox%20VE-9-E57000?logo=proxmox&logoColor=white">
   <img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue">
 </p>
 
@@ -38,7 +38,7 @@ Proxima covers what the Proxmox web interface does (datacenter, nodes, VMs, cont
 ## Requirements
 
 - A Mac with **macOS 26 (Tahoe)** or later.
-- A **Proxmox VE 8 or 9** server or cluster. Proxima is developed against Proxmox VE 9.2.
+- A **Proxmox VE 9** server or cluster. Proxima is developed and tested against Proxmox VE 9.2; Proxmox VE 8 may work but hasn't been tested.
 - To build it: **Xcode 26**.
 
 ## Install
