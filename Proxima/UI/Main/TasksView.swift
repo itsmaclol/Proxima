@@ -67,7 +67,8 @@ struct TaskTable: View {
             TableColumn("User") { task in Text(task.user).foregroundStyle(.secondary).lineLimit(1) }
                 .width(min: 80, ideal: 120)
             TableColumn("Duration") { task in
-                Text(task.isRunning ? "Running" : Format.duration(Int(task.duration.rounded())))
+                // Proxmox logs whole seconds, so a quick task ends in the second it started; "–" read as unknown.
+                Text(task.isRunning ? "Running" : task.duration < 1 ? "<1s" : Format.duration(Int(task.duration.rounded())))
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }

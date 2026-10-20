@@ -155,7 +155,7 @@ private struct StorageContent: View {
             .buttonStyle(.glass)
             .padding(.horizontal, 24)
             .padding(.vertical, 10)
-            Loadable(loading: !loaded, error: error, isEmpty: volumes.isEmpty, emptyTitle: "No \(content.label.lowercased())", emptySymbol: content.symbol,
+            Loadable(loading: !loaded, error: error, isEmpty: volumes.isEmpty, emptyTitle: content.emptyTitle, emptySymbol: content.symbol,
                      emptyMessage: emptyMessage) {
                 if content == .backup {
                     BackupTable(backups: volumes.map { BackupVolume(storage: storage, volume: $0) }, selection: $selection)

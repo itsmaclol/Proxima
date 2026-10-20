@@ -349,6 +349,18 @@ nonisolated enum ContentType: String, CaseIterable, Identifiable {
         case .import: "Import"
         }
     }
+    /// The empty state's title; lowercasing the label gave "No ct volumes".
+    var emptyTitle: String {
+        switch self {
+        case .backup: "No backups"
+        case .iso: "No ISO images"
+        case .vztmpl: "No CT templates"
+        case .images: "No VM disks"
+        case .rootdir: "No CT volumes"
+        case .snippets: "No snippets"
+        case .import: "No import files"
+        }
+    }
     var symbol: String {
         switch self {
         case .backup: "clock.arrow.circlepath"
