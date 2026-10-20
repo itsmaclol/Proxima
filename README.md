@@ -15,6 +15,10 @@
   <img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue">
 </p>
 
+<p align="center">
+  <a href="https://github.com/itsmaclol/Proxima/releases/latest/download/Proxima.dmg"><b>Download for Mac</b></a> · <a href="https://itsmaclol.github.io/Proxima/">Website</a> · <a href="https://github.com/itsmaclol/Proxima/releases/latest">Release notes</a>
+</p>
+
 ![The Overview: live cluster load, what needs attention, backups and nodes](docs/screenshots/overview.png)
 
 Proxima covers what the Proxmox web interface does (datacenter, nodes, VMs, containers, storage, Ceph, SDN, firewall, users and more) as a real Mac app: a sidebar of your guests, live charts, sheets for every editor, menu bar commands, keyboard shortcuts and a menu bar panel.
@@ -39,7 +43,11 @@ Proxima covers what the Proxmox web interface does (datacenter, nodes, VMs, cont
 
 ## Install
 
-Proxima is built from source:
+Download **[Proxima.dmg](https://github.com/itsmaclol/Proxima/releases/latest/download/Proxima.dmg)** from the latest release, open it and drag Proxima into Applications. It runs on Intel and Apple silicon Macs.
+
+This build isn't notarized by Apple yet, so the first time you open it macOS says it can't verify Proxima. Click **Done**, open *System Settings → Privacy & Security*, scroll down and click **Open Anyway** next to the Proxima message. You only do this once. (From Terminal, `xattr -dr com.apple.quarantine /Applications/Proxima.app` does the same.)
+
+### Build from source
 
 ```sh
 git clone https://github.com/itsmaclol/Proxima.git

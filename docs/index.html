@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proxima: Proxmox VE as a native Mac app</title>
+<meta name="description" content="Proxima is a free, open-source macOS 26 app for managing Proxmox VE: VMs, containers, storage, backups, users, firewall and SDN, natively on your Mac.">
+<meta property="og:title" content="Proxima: Proxmox VE as a native Mac app">
+<meta property="og:description" content="A free, open-source macOS 26 app for managing your Proxmox VE servers.">
+<meta property="og:image" content="https://itsmaclol.github.io/Proxima/media/film-poster.jpg">
+<meta name="theme-color" content="#232323">
+<link rel="icon" href="icon.png">
+<link rel="preload" href="assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face {
+  font-family: "Archivo";
+  src: url("assets/fonts/archivo-latin.woff2") format("woff2");
+  font-weight: 400 800;
+  font-display: swap;
+}
+:root {
+  --bg: #ffffff;
+  --surface: #f3f3f3;
+  --ink: #232323;
+  --muted: #6e6e6e;
+  --accent: #a1ffcb;
+  --accent-ink: #232323;
+  --dark: #232323;
+  --dark-2: #2d2d2d;
+  --dark-ink: #ffffff;
+  --dark-soft: #c4c4c4;
+
+  --step-small: clamp(0.8125rem, 0.79rem + 0.1vw, 0.875rem);
+  --step-body: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+  --step-lead: clamp(1.375rem, 1.1rem + 0.9vw, 2.125rem);
+  --step-head: clamp(2rem, 1.3rem + 3.2vw, 4rem);
+  --step-total: clamp(9rem, 18vw, 18.75rem);
+
+  --margin: clamp(16px, 2.8vw, 40px);
+  --radius: 0px;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Archivo", -apple-system, "Helvetica Neue", Arial, sans-serif;
+  font-size: var(--step-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+img, video { display: block; max-width: 100%; }
+a { color: inherit; }
+h1, h2, h3, p { margin: 0; }
+h1, h2, h3 { font-weight: 400; letter-spacing: -0.02em; line-height: 1.02; }
+:focus-visible { outline: 3px solid #1f9d5c; outline-offset: 3px; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+.vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Buttons: one shape for the whole page */
+.btn {
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 18px 26px; border: 0; border-radius: var(--radius);
+  background: var(--accent); color: var(--accent-ink);
+  font: 600 var(--step-body)/1 "Archivo", sans-serif; text-decoration: none; cursor: pointer;
+  transition: transform 160ms var(--ease-out), background-color 160ms;
+}
+.btn:hover { background: #8af5ba; }
+.btn:active { transform: scale(0.97); }
+.btn svg { width: 18px; height: 18px; flex: none; }
+.link { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; text-decoration-color: currentColor; transition: text-decoration-color 160ms; }
+.link:hover { text-decoration-color: #1f9d5c; }
+
+/* ---------- Hero ---------- */
+.hero { display: grid; grid-template-columns: 1fr 1fr; min-height: 100svh; color: var(--dark-ink); }
+.hero-left { background: var(--dark); padding: 40px; display: flex; flex-direction: column; justify-content: space-between; gap: 64px; }
+.hero-right { background: var(--dark-2); display: grid; place-items: center; padding: 40px; position: relative; }
+.mark { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font-weight: 600; font-size: var(--step-body); }
+.mark img { width: 40px; height: 40px; }
+.toplink { position: absolute; top: 40px; right: 40px; font-size: var(--step-small); color: var(--dark-ink); }
+.hero h1 { font-size: var(--step-lead); max-width: 18ch; }
+.hero h1 .line { display: block; overflow: hidden; padding-bottom: 0.08em; }
+.hero h1 .line > span { display: block; }
+.hero-copy p { margin-top: 18px; max-width: 44ch; color: var(--dark-soft); }
+.hero-actions { margin-top: 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; }
+.hero-meta { font-size: var(--step-small); color: var(--dark-soft); }
+.hero-note { margin-top: 22px; max-width: 46ch; font-size: var(--step-small); color: var(--dark-soft); }
+.hero-note a { color: var(--dark-ink); }
+
+/* ---------- Product fragments (the app's own look) ---------- */
+[data-ui] { font-family: "Archivo", sans-serif; font-size: 13px; line-height: 1.35; }
+.win {
+  width: min(480px, 100%); height: 460px; display: grid; grid-template-columns: 196px 1fr;
+  background: #1e1e1e; color: #eaeaea; border-radius: 14px; overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.08); /* taste-skill-ignore: Proxima's own UI inside a data-ui fragment */
+}
+.win-side { background: #262626; padding: 12px 8px; display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+.win-lights { display: flex; gap: 7px; padding: 2px 6px 12px; }
+.win-lights i { width: 11px; height: 11px; border-radius: 50%; background: #4a4a4a; }
+.win-lights i:nth-child(1) { background: #ff5f57; } .win-lights i:nth-child(2) { background: #febc2e; } .win-lights i:nth-child(3) { background: #28c840; }
+.side-label { color: #a8a8a8; font-size: 11px; font-weight: 600; padding: 8px 8px 4px; }
+.g-row {
+  display: grid; grid-template-columns: 16px 1fr auto; align-items: center; gap: 8px; width: 100%;
+  padding: 5px 8px; border: 0; border-radius: 6px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  transition: background-color 120ms;
+}
+.g-row:hover { background: #333; }
+.g-row[aria-current="true"] { background: #3b3b3b; }
+.g-row .id { color: #8d8d8d; font-variant-numeric: tabular-nums; }
+.g-row .nm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.g-ico { position: relative; width: 16px; height: 14px; }
+.g-ico svg { width: 16px; height: 14px; color: #d6d6d6; }
+.g-ico .dot { position: absolute; right: -3px; bottom: -2px; width: 7px; height: 7px; border-radius: 50%; background: #6b6b6b; box-shadow: 0 0 0 2px #262626; transition: background-color 300ms; } /* taste-skill-ignore: Proxima's own UI inside a data-ui fragment */
+.g-row.on .dot { background: #32d74b; }
+.g-row.busy .dot { background: #febc2e; }
+.win-main { position: relative; padding: 20px 20px 16px; display: flex; flex-direction: column; gap: 16px; }
+.gm-title { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+.gm-sub { color: #9a9a9a; margin-top: 2px; }
+.gm-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; background: #333; color: #cfcfcf; font-size: 12px; font-weight: 600; }
+.pill.run { background: rgba(50,215,75,0.18); color: #5ee27a; }
+.pill.run::before, .pill.stop::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.pill.stop { background: #3a3a3a; color: #b0b0b0; }
+.gm-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat { background: #2a2a2a; border-radius: 10px; padding: 10px 12px; }
+.stat b { display: block; font-size: 20px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.stat span { color: #9a9a9a; font-size: 12px; }
+.gm-details { background: #2a2a2a; border-radius: 10px; padding: 2px 12px; }
+.gm-details div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; }
+.gm-details div + div { border-top: 1px solid #353535; } /* taste-skill-ignore: Proxima's own UI inside a data-ui fragment */
+.gm-details span { color: #9a9a9a; }
+.gm-details b { font-weight: 600; text-align: right; }
+.gm-actions { display: flex; gap: 8px; }
+.ui-btn {
+  padding: 7px 14px; border-radius: 8px; border: 1px solid #4a4a4a; background: #333; color: #f2f2f2; /* taste-skill-ignore: Proxima's own UI inside a data-ui fragment */
+  font: 600 13px/1 "Archivo", sans-serif; cursor: pointer; transition: transform 120ms var(--ease-out), background-color 120ms;
+}
+.ui-btn:hover { background: #3d3d3d; }
+.ui-btn:active { transform: scale(0.96); }
+.ui-btn.primary { background: #32d74b; border-color: #32d74b; color: #0b2a12; }
+.ui-btn[disabled] { opacity: 0.45; cursor: default; }
+.activity {
+  position: absolute; left: 50%; bottom: 16px; translate: -50% 0; display: inline-flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-radius: 999px; background: #2f2f2f; box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.08); /* taste-skill-ignore: Proxima's own UI inside a data-ui fragment */
+  font-weight: 600; white-space: nowrap; transition: opacity 300ms, translate 400ms var(--ease-out);
+}
+.activity[hidden] { display: inline-flex; opacity: 0; translate: -50% 12px; pointer-events: none; }
+.spin { width: 13px; height: 13px; border-radius: 50%; border: 2px solid #5a5a5a; border-top-color: #eaeaea; animation: spin 0.8s linear infinite; }
+.ok { width: 14px; height: 14px; border-radius: 50%; background: #32d74b; display: grid; place-items: center; }
+.ok svg { width: 9px; height: 9px; color: #0b2a12; }
+@keyframes spin { to { transform: rotate(1turn); } }
+.hint { position: absolute; left: 40px; bottom: 40px; font-size: var(--step-small); color: var(--dark-soft); max-width: 30ch; }
+
+/* ---------- Sections ---------- */
+section { position: relative; }
+.wrap { padding: 0 var(--margin); }
+.gap { padding-top: clamp(96px, 12vw, 200px); }
+
+/* Film */
+.film { background: var(--dark); color: var(--dark-ink); padding: clamp(48px, 6vw, 96px) var(--margin); }
+.film-frame { position: relative; background: #0e0e0e; }
+.film video { width: 100%; height: auto; aspect-ratio: 16 / 9; }
+.film-bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 24px; margin-top: 20px; }
+.film-bar p { font-size: var(--step-lead); max-width: 30ch; line-height: 1.15; letter-spacing: -0.02em; }
+.vbtn {
+  display: inline-flex; align-items: center; gap: 10px; padding: 12px 18px; border: 0; border-radius: var(--radius);
+  background: #3a3a3a; color: #fff; font: 600 var(--step-small)/1 "Archivo", sans-serif; cursor: pointer; transition: background-color 160ms, transform 160ms var(--ease-out);
+}
+.vbtn:hover { background: #4a4a4a; }
+.vbtn:active { transform: scale(0.97); }
+.vbtn.light { background: var(--surface); color: var(--ink); }
+.vbtn.light:hover { background: #e6e6e6; }
+
+/* Showcase: one row, three states */
+.states { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: 24px; }
+.states h2 { grid-column: 4 / 13; font-size: var(--step-lead); margin-bottom: 96px; }
+.state { display: contents; }
+.state-word { grid-column: 1 / 4; justify-self: end; align-self: center; font-size: var(--step-lead); color: var(--muted); }
+.state-row { grid-column: 4 / 10; margin-bottom: 56px; }
+.task {
+  width: 640px; max-width: 100%; display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 12px;
+  padding: 12px 14px; background: #fff; border-radius: 12px; box-shadow: 0 1px 0 rgba(0,0,0,0.04), 0 0 0 1px #e3e3e3; color: #1d1d1f; /* taste-skill-ignore: Proxima's own UI inside a data-ui fragment */
+}
+.task-title { font-weight: 600; font-size: 14px; }
+.task-sub { color: #6e6e73; font-size: 12px; margin-top: 2px; }
+.task-acts { display: flex; gap: 6px; }
+.t-btn { padding: 5px 11px; border-radius: 7px; border: 1px solid #d2d2d7; background: #fff; color: #1d1d1f; font: 600 12px/1 "Archivo", sans-serif; cursor: pointer; transition: background-color 120ms, transform 120ms; } /* taste-skill-ignore: Proxima's own UI inside a data-ui fragment */
+.t-btn:hover { background: #f2f2f2; }
+.t-btn:active { transform: scale(0.96); }
+.task.hover { box-shadow: 0 0 0 2px #1f9d5c; } /* taste-skill-ignore: Proxima's own UI inside a data-ui fragment */
+.t-spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #d2d2d7; border-top-color: #1d1d1f; animation: spin 0.8s linear infinite; }
+.t-ok { width: 18px; height: 18px; border-radius: 50%; background: #28c840; display: grid; place-items: center; }
+.t-ok svg { width: 10px; height: 10px; color: #fff; }
+.t-bar { grid-column: 2 / 4; height: 4px; border-radius: 2px; background: #ececec; overflow: hidden; }
+.t-bar i { display: block; height: 100%; width: 41%; background: #1d1d1f; transition: width 600ms var(--ease-out); }
+.t-log { grid-column: 1 / 4; margin: 4px 0 0; padding: 10px 12px; border-radius: 8px; background: #1d1d1f; color: #e5e5e5; font: 11.5px/1.55 ui-monospace, Menlo, monospace; white-space: pre-wrap; word-break: break-word; } /* taste-skill-ignore: Proxima's own UI inside a data-ui fragment */
+.t-log[hidden] { display: none; }
+
+/* Features: panel with margin notes */
+.index { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: 24px; position: relative; }
+.index h2 { grid-column: 1 / 5; grid-row: 1; text-align: right; font-size: var(--step-head); align-self: start; }
+.notes-l, .notes-r { position: relative; grid-row: 1; }
+.notes-l { grid-column: 1 / 5; }
+.notes-r { grid-column: 9 / 13; }
+.panel-col { grid-column: 5 / 9; grid-row: 1; display: flex; justify-content: center; }
+.note { position: absolute; width: 24ch; max-width: 100%; padding: 6px 0; cursor: default; }
+.notes-l .note { right: 0; text-align: right; }
+.notes-r .note { left: 0; }
+.note b { display: block; font-weight: 600; }
+.note span { display: block; margin-top: 4px; font-size: var(--step-small); color: var(--muted); line-height: 1.45; }
+.note.active b { background: var(--accent); box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.side {
+  width: 380px; height: 700px; background: #f6f6f6; border-radius: 16px; padding: 14px 10px; color: #1d1d1f;
+  box-shadow: 0 30px 70px rgba(0,0,0,0.12), 0 0 0 1px #e1e1e1; overflow: hidden; /* taste-skill-ignore: Proxima's own UI inside a data-ui fragment */
+}
+.side .win-lights { padding: 2px 6px 14px; }
+.side .win-lights i { background: #d4d4d4; }
+.side-search { margin: 0 4px 10px; padding: 7px 10px; border-radius: 8px; background: #e7e7e7; color: #636366; }
+.s-row { display: grid; grid-template-columns: 18px 1fr auto; align-items: center; gap: 9px; padding: 6px 10px; border-radius: 7px; transition: background-color 160ms; }
+.s-row svg { width: 16px; height: 16px; color: #3a3a3c; }
+.s-row .n { color: #636366; font-variant-numeric: tabular-nums; }
+.s-row.sub { padding-left: 30px; }
+.s-row.hot { background: var(--accent); }
+.s-label { color: #636366; font-size: 11px; font-weight: 600; padding: 12px 10px 4px; }
+.s-dot { width: 7px; height: 7px; border-radius: 50%; background: #32d74b; display: inline-block; margin-right: 6px; vertical-align: 1px; }
+
+/* Appearance band */
+.looks { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: 24px; row-gap: 24px; }
+.looks h2 { grid-column: 1 / 8; font-size: var(--step-head); }
+.looks .lede { grid-column: 8 / 13; align-self: end; max-width: 42ch; }
+.looks-main { grid-column: 1 / 9; }
+.looks-side { grid-column: 9 / 13; display: grid; gap: 24px; align-content: start; }
+.looks figure { margin: 0; }
+.looks figcaption { margin-top: 10px; font-size: var(--step-small); color: var(--muted); }
+.looks video, .looks img { width: 100%; height: auto; background: var(--surface); }
+.looks-side img { aspect-ratio: 4 / 3; object-fit: cover; object-position: 30% 0; }
+.zoom { overflow: hidden; }
+.zoom img { transition: transform 900ms var(--ease-out); }
+.zoom:hover img { transform: scale(1.04); }
+
+/* Stats: total and its receipt */
+.stats { background: var(--dark); color: var(--dark-ink); display: grid; grid-template-columns: repeat(12, 1fr); column-gap: 24px; padding: clamp(80px, 9vw, 140px) var(--margin); }
+.stats-left { grid-column: 1 / 7; display: flex; flex-direction: column; justify-content: space-between; gap: 64px; }
+.stats h2 { font-size: var(--step-head); max-width: 14ch; }
+.stats .note-p { margin-top: 18px; max-width: 40ch; color: var(--dark-soft); }
+.total { font-size: var(--step-total); line-height: 0.8; letter-spacing: -0.05em; color: var(--accent); font-variant-numeric: tabular-nums; }
+.total-cap { margin-top: 18px; color: var(--dark-soft); }
+.slip-col { grid-column: 8 / 12; }
+.slip {
+  background: #ffffff; color: #232323; padding: 26px 26px 46px;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), 95% 100%, 90% calc(100% - 12px), 85% 100%, 80% calc(100% - 12px), 75% 100%, 70% calc(100% - 12px), 65% 100%, 60% calc(100% - 12px), 55% 100%, 50% calc(100% - 12px), 45% 100%, 40% calc(100% - 12px), 35% 100%, 30% calc(100% - 12px), 25% 100%, 20% calc(100% - 12px), 15% 100%, 10% calc(100% - 12px), 5% 100%, 0 calc(100% - 12px));
+}
+.slip h3 { font-size: var(--step-body); font-weight: 700; letter-spacing: 0; margin: 18px 0 6px; }
+.slip h3:first-child { margin-top: 0; }
+.slip-row { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; font-variant-numeric: tabular-nums; }
+.slip-row .lead { flex: 1; min-width: 12px; height: 4px; align-self: center; background-image: radial-gradient(circle, #9a9a9a 1.6px, transparent 2px); background-size: 8px 4px; background-repeat: repeat-x; } /* taste-skill-ignore: dot leader the receipt layout calls for */
+.slip-row.sum { margin-top: 16px; padding: 10px 12px; background: #232323; color: #fff; font-weight: 700; }
+.slip-row.sum .lead { background-image: radial-gradient(circle, #8a8a8a 1.6px, transparent 2px); } /* taste-skill-ignore: dot leader the receipt layout calls for */
+.slip-foot { margin-top: 16px; font-size: var(--step-small); color: #6e6e6e; }
+
+/* How it works: one card, four fields */
+.strip { display: grid; grid-template-columns: repeat(4, 1fr); }
+.field { position: relative; min-height: 84svh; padding: 28px; display: flex; flex-direction: column; }
+.field:nth-child(1) { background: var(--surface); color: var(--ink); }
+.field:nth-child(2) { background: var(--dark); color: var(--dark-ink); }
+.field:nth-child(3) { background: var(--accent); color: var(--accent-ink); }
+.field:nth-child(4) { background: #6e6e6e; color: #fff; }
+.field h2 { font-size: var(--step-lead); font-weight: 600; }
+.field-card { position: absolute; left: 0; right: 0; top: 38%; display: flex; justify-content: center; }
+.field-card .cc { transition: transform 150ms var(--ease-out); }
+.field:hover .cc { transform: translateY(-6px); }
+.clause { margin-top: auto; font-size: var(--step-lead); line-height: 1.1; letter-spacing: -0.02em; max-width: 13em; }
+.cc {
+  width: 260px; background: #fff; color: #1d1d1f; border-radius: 12px; padding: 14px;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06); /* taste-skill-ignore: Proxima's own UI inside a data-ui fragment */
+}
+.cc-title { font-weight: 700; font-size: 14px; margin-bottom: 10px; }
+.cc-f { display: grid; gap: 3px; margin-bottom: 8px; }
+.cc-f label { font-size: 11px; color: #6e6e73; font-weight: 600; }
+.cc-f div { padding: 6px 8px; border-radius: 6px; border: 1px solid #d2d2d7; min-height: 28px; font-size: 12.5px; } /* taste-skill-ignore: Proxima's own UI inside a data-ui fragment */
+.cc-f div.empty { color: #b0b0b5; }
+.cc-f div.fp { font-size: 11.5px; line-height: 1.4; word-break: break-all; font-variant-numeric: tabular-nums; } /* taste-skill-ignore: Proxima's own UI inside a data-ui fragment */
+.cc-row { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
+.cc-btn { padding: 5px 11px; border-radius: 7px; border: 1px solid #d2d2d7; background: #fff; font-weight: 600; font-size: 12px; } /* taste-skill-ignore: Proxima's own UI inside a data-ui fragment */
+.cc-btn.go { background: #1d1d1f; color: #fff; border-color: #1d1d1f; }
+.cc-check { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-top: 4px; }
+.cc-check i { width: 13px; height: 13px; border-radius: 4px; background: #1d1d1f; display: grid; place-items: center; }
+.cc-check i svg { width: 8px; height: 8px; color: #fff; }
+.cc-done { display: grid; gap: 6px; }
+.cc-done .big { font-size: 18px; font-weight: 700; }
+.cc-done .meta { color: #6e6e73; font-size: 12px; }
+
+/* FAQ */
+.faq { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: 24px; }
+.faq h2 { grid-column: 1 / 5; font-size: var(--step-head); position: sticky; top: 96px; align-self: start; }
+.faq-list { grid-column: 5 / 13; display: grid; gap: 8px; }
+.faq details { background: var(--surface); border-radius: var(--radius); transition: background-color 200ms; }
+.faq summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 24px; min-height: 72px; padding: 20px 24px; font-weight: 600; cursor: pointer; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary:hover { background: #ebebeb; }
+.plus { position: relative; width: 16px; height: 16px; flex: none; }
+.plus::before, .plus::after { content: ""; position: absolute; left: 0; top: 6.5px; width: 16px; height: 3px; background: currentColor; transition: transform 220ms var(--ease-out); }
+.plus::after { transform: rotate(90deg); }
+.faq details[open] { background: var(--accent); }
+.faq details[open] summary:hover { background: transparent; }
+.faq details[open] .plus::after { transform: rotate(0deg); }
+.faq .answer { padding: 0 24px 24px; max-width: calc(52ch + 48px); }
+.faq .answer p + p { margin-top: 12px; }
+.faq code { font: 0.92em ui-monospace, Menlo, monospace; background: rgba(0,0,0,0.08); padding: 1px 5px; } /* taste-skill-ignore: Proxima's own UI inside a data-ui fragment */
+
+/* CTA over the tunnel */
+.cta { position: relative; overflow: hidden; background: #0e0e0e; color: #fff; min-height: 88svh; display: flex; align-items: center; padding: 120px var(--margin); }
+.cta video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.55; }
+.cta-scrim { position: absolute; inset: 0; background: rgba(14, 14, 14, 0.45); }
+.cta-inner { position: relative; width: 100%; }
+.cta-line { font-size: var(--step-head); line-height: 1.12; letter-spacing: -0.02em; max-width: 16em; }
+.cta-line input {
+  font: inherit; letter-spacing: inherit; color: #fff; width: 5.2em; height: 1.12em; padding: 0 0.2em; vertical-align: baseline;
+  background: rgba(255,255,255,0.14); border: 0; border-radius: var(--radius);
+}
+.cta-line input::placeholder { color: #bdbdbd; }
+.cta-line input:focus { outline: 3px solid var(--accent); outline-offset: 2px; }
+.cta-line .go {
+  font: inherit; letter-spacing: inherit; height: 1.12em; padding: 0 0.25em; border: 0; border-radius: var(--radius);
+  background: var(--accent); color: var(--accent-ink); cursor: pointer; text-decoration: none; display: inline-block; line-height: 1.12;
+  transition: background-color 160ms, transform 160ms var(--ease-out);
+}
+.cta-line .go:hover { background: #8af5ba; }
+.cta-line .go:active { transform: scale(0.97); }
+.cta-after { margin-top: 24px; color: #d0d0d0; max-width: 60ch; }
+.cta .vbtn { position: absolute; right: var(--margin); bottom: 24px; }
+
+/* Footer of tiles */
+.tiles { display: grid; grid-template-columns: repeat(12, 1fr); gap: 8px; padding: 10px; }
+.tile { background: var(--surface); padding: 22px; min-height: 220px; display: flex; flex-direction: column; }
+.t-statement { grid-column: 1 / 5; justify-content: space-between; }
+.t-statement p:first-child { font-size: var(--step-lead); line-height: 1.2; letter-spacing: -0.01em; }
+.t-legal { font-size: var(--step-small); color: var(--muted); margin-top: 24px; }
+.t-nav { grid-column: 5 / 8; }
+.t-nav ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.t-req { grid-column: 8 / 10; }
+.t-req b { display: block; font-weight: 600; margin-bottom: 6px; }
+.t-by { grid-column: 10 / 13; justify-content: flex-end; }
+.t-by a { font-size: var(--step-lead); line-height: 1.15; }
+.t-word { grid-column: 1 / 9; background: var(--dark); color: #fff; min-height: 320px; display: grid; place-items: center; overflow: hidden; }
+.t-word span { font-size: 9vw; letter-spacing: -0.04em; line-height: 1; }
+.t-cta { grid-column: 9 / 13; background: var(--accent); min-height: 320px; text-decoration: none; color: var(--accent-ink); position: relative; transition: background-color 200ms; }
+.t-cta:hover { background: #8af5ba; }
+.t-cta span { font-size: var(--step-lead); line-height: 1.1; letter-spacing: -0.01em; max-width: 9em; }
+.t-cta svg { position: absolute; right: 22px; bottom: 22px; width: 64px; height: 64px; transition: transform 260ms var(--ease-out); }
+.t-cta:hover svg { transform: translate(6px, -6px); }
+
+/* ---------- Motion ---------- */
+.js .rise { opacity: 0; transform: translateY(24px); transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out); transition-delay: calc(var(--i, 0) * 80ms); }
+.js .rise.in { opacity: 1; transform: none; }
+.js .hero h1 .line > span { transform: translateY(105%); }
+.js .hero.ready h1 .line > span { transform: none; transition: transform 900ms var(--ease-out); }
+.js .hero.ready h1 .line:nth-child(2) > span { transition-delay: 110ms; }
+.js .hero .after { opacity: 0; transform: translateY(12px); }
+.js .hero.ready .after { opacity: 1; transform: none; transition: opacity 600ms 500ms, transform 600ms 500ms var(--ease-out); }
+.js .slip .slip-row, .js .slip h3 { opacity: 0; transform: translateY(6px); }
+.js .slip.in .slip-row, .js .slip.in h3 { opacity: 1; transform: none; transition: opacity 400ms, transform 400ms var(--ease-out); transition-delay: calc(var(--i, 0) * 45ms); }
+.looks-main video { transform-origin: 50% 40%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .js .rise, .js .hero h1 .line > span, .js .hero .after, .js .slip .slip-row, .js .slip h3 { opacity: 1; transform: none; transition: none; }
+  .spin, .t-spin { animation-duration: 2.4s; }
+  .zoom:hover img, .field:hover .cc { transform: none; }
+}
+
+/* ---------- Phone ---------- */
+@media (max-width: 860px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-right { order: -1; min-height: 58svh; padding: 72px 16px 24px; }
+  .hero-left { padding: 28px 20px 40px; gap: 32px; }
+  .hero-left .mark { position: absolute; top: 20px; left: 20px; color: #fff; }
+  .toplink { top: 26px; right: 20px; }
+  .hint { display: none; }
+  .win { width: 100%; height: auto; min-height: 440px; grid-template-columns: 132px 1fr; }
+  .win-main { padding: 16px 12px 64px; }
+  .g-row { grid-template-columns: 16px 1fr; }
+  .g-row .id { display: none; }
+  .stat b { font-size: 17px; }
+  .gm-details div { flex-direction: column; gap: 0; }
+  .gm-details b { text-align: left; }
+  .states { display: block; }
+  .states h2 { margin-bottom: 40px; }
+  .state-row { margin-bottom: 10px; overflow: hidden; }
+  .state-word { display: block; margin-bottom: 48px; }
+  .state { display: flex; flex-direction: column-reverse; }
+  .index { display: block; }
+  .index h2 { text-align: left; margin-bottom: 32px; }
+  .notes-l, .notes-r { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 16px; margin-top: 28px; }
+  .note { position: static !important; width: auto; text-align: left !important; }
+  .side { width: 100%; max-width: 380px; height: auto; margin: 0 auto; }
+  .looks { display: block; }
+  .looks .lede { margin: 16px 0 28px; }
+  .looks-side { margin-top: 24px; }
+  .stats { display: block; }
+  .stats-left { gap: 40px; }
+  .slip-col { margin-top: 48px; }
+  .strip { grid-template-columns: 1fr; }
+  .field { min-height: 64svh; padding: 20px; }
+  .field-card { position: static; justify-content: flex-start; margin-top: 32px; }
+  .clause { margin-top: 0; order: -1; }
+  .field h2 { order: -2; margin-bottom: 12px; }
+  .faq { display: block; }
+  .faq h2 { position: static; margin-bottom: 24px; }
+  .faq summary { min-height: 64px; padding: 16px 20px; }
+  .faq .answer { padding: 0 20px 20px; }
+  .cta .vbtn { position: static; margin-top: 28px; }
+  .tiles { grid-template-columns: 1fr 1fr; gap: 6px; padding: 6px; }
+  .tile { min-height: 0; padding: 20px; }
+  .t-word { grid-column: 1 / 3; order: -2; min-height: 160px; }
+  .t-word span { font-size: 18vw; }
+  .t-cta { grid-column: 1 / 3; order: -1; min-height: 180px; }
+  .t-nav, .t-by { grid-column: span 1; }
+  .t-req { grid-column: span 1; }
+  .t-statement { grid-column: 1 / 3; }
+}
+</style>
+</head>
+<body>
+
+<!-- Hero: the product doing its job -->
+<header class="hero" id="top">
+  <div class="hero-left">
+    <a class="mark" href="#top"><img src="icon.png" alt="" width="40" height="40">Proxima</a>
+    <div class="hero-copy">
+      <h1><span class="line"><span>Proxmox VE, as a</span></span><span class="line"><span>native Mac app</span></span></h1>
+      <div class="after">
+        <p>Run your VMs, containers, storage and backups from a real macOS 26 app instead of a browser tab. Free and open source.</p>
+        <div class="hero-actions">
+          <a class="btn" href="https://github.com/itsmaclol/Proxima/releases/latest/download/Proxima.dmg">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M10 3v10M5 9l5 5 5-5M4 17h12"/></svg>
+            Download for Mac
+          </a>
+          <span class="hero-meta">Version 1.0 · 11 MB · macOS 26 or later</span>
+        </div>
+        <p class="hero-note">The app isn't notarized yet, so the first time, macOS asks you to confirm it under System Settings → Privacy &amp; Security. <a class="link" href="#q-open">How</a></p>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <a class="toplink link" href="https://github.com/itsmaclol/Proxima">Source on GitHub</a>
+    <div class="win" data-ui id="demo" aria-label="Interactive preview of Proxima's guest list">
+      <div class="win-side">
+        <div class="win-lights" aria-hidden="true"><i></i><i></i><i></i></div>
+        <div class="side-label">pve1 · 9 guests</div>
+        <div id="guest-list" role="list"></div>
+      </div>
+      <div class="win-main">
+        <div>
+          <div class="gm-title" id="gm-name">db-primary</div>
+          <div class="gm-sub" id="gm-sub">Virtual machine 101 on pve1</div>
+          <div class="gm-pills"><span class="pill run" id="gm-state">Running</span><span class="pill" id="gm-up">Up 28d 6h</span></div>
+        </div>
+        <div class="gm-stats">
+          <div class="stat"><span>CPU</span><b id="gm-cpu">16%</b></div>
+          <div class="stat"><span>Memory</span><b id="gm-mem">14.6 GiB</b></div>
+        </div>
+        <div class="gm-details">
+          <div><span>Operating system</span><b id="gm-os">Debian 13</b></div>
+          <div><span>Start at boot</span><b id="gm-boot">Yes</b></div>
+          <div><span>Last backup</span><b id="gm-bak">Yesterday, nas-backup</b></div>
+        </div>
+        <div class="gm-actions">
+          <button class="ui-btn primary" id="gm-start" type="button">Start</button>
+          <button class="ui-btn" id="gm-stop" type="button">Shut Down</button>
+        </div>
+        <div class="activity" id="gm-task" hidden aria-live="polite"></div>
+      </div>
+    </div>
+    <p class="hint">Pick a guest and start or shut it down. Nothing here touches a real server.</p>
+  </div>
+</header>
+
+<main>
+
+<!-- The film -->
+<section class="film" aria-label="Proxima in motion">
+  <div class="film-frame">
+    <video id="film" autoplay muted loop playsinline preload="metadata" poster="media/film-poster.jpg" width="1920" height="1080" aria-label="A short film of Proxima: the icon, a flight past its screens, the overview in light and dark.">
+      <source src="media/film.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="film-bar">
+    <p class="rise">Every page of the web UI, rebuilt for the Mac.</p>
+    <button class="vbtn rise" type="button" data-toggle="film" style="--i:1">Pause film</button>
+  </div>
+</section>
+
+<!-- Showcase: one task, three states -->
+<section class="gap wrap" aria-labelledby="h-tasks">
+  <div class="states">
+    <h2 id="h-tasks" class="rise">Every task, in view</h2>
+    <div class="state">
+      <div class="state-word rise">Started</div>
+      <div class="state-row rise" style="--i:1">
+        <div class="task" data-ui>
+          <span class="t-spin" aria-hidden="true"></span>
+          <div><div class="task-title">Back up VM 101 (db-primary)</div><div class="task-sub">pve1 · started just now</div></div>
+          <div class="task-acts"><button class="t-btn" type="button" tabindex="-1">Log</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="state">
+      <div class="state-word rise">Watching</div>
+      <div class="state-row rise" style="--i:1">
+        <div class="task hover" data-ui id="live-task">
+          <span class="t-spin" aria-hidden="true" id="lt-icon"></span>
+          <div><div class="task-title">Back up VM 101 (db-primary)</div><div class="task-sub" id="lt-sub">pve1 · 13.1 of 32.0 GiB · 41%</div></div>
+          <div class="task-acts"><button class="t-btn" type="button" id="lt-log" aria-expanded="false" aria-controls="lt-text">Log</button><button class="t-btn" type="button" id="lt-finish">Finish</button></div>
+          <div class="t-bar" aria-hidden="true"><i id="lt-bar"></i></div>
+          <pre class="t-log" id="lt-text" hidden>INFO: starting new backup job: vzdump 101 --storage nas-backup --mode snapshot --compress zstd
+INFO: Starting Backup of VM 101 (qemu)
+INFO: status = running
+INFO: creating vzdump archive 'vzdump-qemu-101-2026_10_21-02_00_04.vma.zst'
+INFO:  41% (13.1 GiB of 32.0 GiB) in 12s, read: 1.1 GiB/s, write: 402.0 MiB/s</pre>
+        </div>
+      </div>
+    </div>
+    <div class="state">
+      <div class="state-word rise">Done</div>
+      <div class="state-row rise" style="--i:1">
+        <div class="task" data-ui>
+          <span class="t-ok" aria-hidden="true"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5.2l2 2 4-4.4"/></svg></span>
+          <div><div class="task-title">Back up VM 101 (db-primary)</div><div class="task-sub">pve1 · finished in 41 s · OK</div></div>
+          <div class="task-acts"><button class="t-btn" type="button" tabindex="-1">Log</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features: the sidebar, annotated -->
+<section class="gap wrap" aria-labelledby="h-index">
+  <div class="index" id="index">
+    <h2 id="h-index" class="rise">The web UI, in a sidebar</h2>
+    <div class="notes-l">
+      <div class="note rise" data-key="overview" style="top: 150px"><b>Overview</b><span>Problems, backup coverage and every node's load on one page.</span></div>
+      <div class="note rise" data-key="guest" style="top: 300px"><b>VMs and containers</b><span>Create, clone, migrate, snapshot and back up. Consoles open in their own window.</span></div>
+      <div class="note rise" data-key="storage" style="top: 470px"><b>Storage</b><span>Upload ISOs and templates, pull OCI images, restore backups.</span></div>
+    </div>
+    <div class="panel-col">
+      <div class="side rise" data-ui aria-hidden="true">
+        <div class="win-lights"><i></i><i></i><i></i></div>
+        <div class="side-search">Guests, tags, nodes</div>
+        <div class="s-row" data-key="overview"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>Overview<span></span></div>
+        <div class="s-row"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2l6 3-6 3-6-3 6-3zM2 8l6 3 6-3M2 11l6 3 6-3"/></svg>Guests<span class="n">17</span></div>
+        <div class="s-row"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="2" width="10" height="12" rx="1.5"/><path d="M6 5h4M6 8h4M6 11h2"/></svg>Tasks<span></span></div>
+        <div class="s-label">Nodes</div>
+        <div class="s-row" data-key="node"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="12" height="4" rx="1"/><rect x="2" y="9" width="12" height="4" rx="1"/></svg><span><span class="s-dot"></span>pve1</span><span class="n">18%</span></div>
+        <div class="s-row sub"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="12" height="8" rx="1"/><path d="M6 14h4"/></svg>web-frontend<span class="n">100</span></div>
+        <div class="s-row sub" data-key="guest"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="12" height="8" rx="1"/><path d="M6 14h4"/></svg>db-primary<span class="n">101</span></div>
+        <div class="s-row sub"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2l5.5 3v6L8 14l-5.5-3V5z"/></svg>pihole<span class="n">200</span></div>
+        <div class="s-row sub"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2l5.5 3v6L8 14l-5.5-3V5z"/></svg>jellyfin<span class="n">202</span></div>
+        <div class="s-row sub" data-key="storage"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><ellipse cx="8" cy="4" rx="5.5" ry="2"/><path d="M2.5 4v8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2V4"/></svg>local-lvm<span class="n">81%</span></div>
+        <div class="s-label">Datacenter</div>
+        <div class="s-row" data-key="backups"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 8a5 5 0 1 0 1.5-3.6M3 2.5V5h2.5"/></svg>Backups<span></span></div>
+        <div class="s-row"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 6h9l-2-2M13 10H4l2 2"/></svg>Replication<span></span></div>
+        <div class="s-row" data-key="perms"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="6" cy="6" r="2.5"/><path d="M1.5 13c.6-2.2 2.3-3.5 4.5-3.5s3.9 1.3 4.5 3.5M11 4.5a2 2 0 1 1 0 4M12.5 10c1 .5 1.7 1.6 2 3"/></svg>Permissions<span></span></div>
+        <div class="s-row"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 2v3M8 11v3M2 8h3M11 8h3"/><circle cx="8" cy="8" r="3"/></svg>HA<span></span></div>
+        <div class="s-row" data-key="firewall"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1.8l5 2v4c0 3-2.2 5.2-5 6.4-2.8-1.2-5-3.4-5-6.4v-4z"/></svg>Firewall<span></span></div>
+        <div class="s-row" data-key="firewall"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="4" cy="4" r="1.6"/><circle cx="12" cy="4" r="1.6"/><circle cx="8" cy="12" r="1.6"/><path d="M5.3 5.2l1.8 5.2M10.7 5.2l-1.8 5.2M5.6 4h4.8"/></svg>SDN<span></span></div>
+      </div>
+    </div>
+    <div class="notes-r">
+      <div class="note rise" data-key="node" style="top: 196px"><b>Nodes</b><span>Shell, updates, network, disks, Ceph and certificates for every node.</span></div>
+      <div class="note rise" data-key="backups" style="top: 418px"><b>Backups and jobs</b><span>Schedules, retention, replication and a simulator for when the next run lands.</span></div>
+      <div class="note rise" data-key="perms" style="top: 520px"><b>Users and access</b><span>Users, groups, pools, API tokens, two-factor and realms.</span></div>
+      <div class="note rise" data-key="firewall" style="top: 640px"><b>Firewall and SDN</b><span>Rules, aliases, IP sets, zones, VNets and fabrics.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- Light and dark -->
+<section class="gap wrap" aria-labelledby="h-looks">
+  <div class="looks">
+    <h2 id="h-looks" class="rise">It looks like it belongs</h2>
+    <p class="lede rise" style="--i:1">Liquid Glass, the menu bar, your accent colour and your light or dark setting. Proxima follows the Mac, not the browser.</p>
+    <figure class="looks-main rise">
+      <video id="looks" autoplay muted loop playsinline preload="metadata" poster="media/appearance-poster.jpg" width="1320" height="860" aria-label="The datacenter overview switching between light and dark appearance.">
+        <source src="media/appearance.mp4" type="video/mp4">
+      </video>
+      <figcaption>The datacenter overview, switching between light and dark. <button class="vbtn light" type="button" data-toggle="looks" style="margin-left:8px;padding:8px 12px">Pause</button></figcaption>
+    </figure>
+    <div class="looks-side">
+      <figure class="zoom rise" style="--i:1"><img src="screenshots/node.png" alt="A node's summary page: CPU, memory, load and performance charts for pve1." width="1320" height="860" loading="lazy"><figcaption>A node: status, load and performance over time.</figcaption></figure>
+      <figure class="zoom rise" style="--i:2"><img src="screenshots/guest-dark.png" alt="A virtual machine's summary in dark mode, with CPU, memory, network and disk activity." width="1320" height="860" loading="lazy"><figcaption>A VM in dark mode, with live CPU, network and disk.</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- Stats: a total and its receipt -->
+<section class="stats gap" aria-labelledby="h-stats" style="margin-top: clamp(96px, 12vw, 200px)">
+  <div class="stats-left">
+    <div>
+      <h2 id="h-stats" class="rise">Checked against Proxmox itself</h2>
+      <p class="note-p rise" style="--i:1">Every API call the app makes is compared with the schema a Proxmox server publishes. Against Proxmox VE 9.2, all of them match.</p>
+    </div>
+    <div>
+      <div class="total rise" aria-hidden="true">439</div>
+      <p class="total-cap rise" style="--i:1">API calls, every one matching the server's own description.</p>
+    </div>
+  </div>
+  <div class="slip-col">
+    <div class="slip" id="slip" aria-label="Breakdown of the 439 API calls by area">
+      <h3 style="--i:0">Nodes and disks</h3>
+      <div class="slip-row" style="--i:1"><span>Nodes</span><span class="lead"></span><span>122</span></div>
+      <div class="slip-row" style="--i:2"><span>Ceph</span><span class="lead"></span><span>29</span></div>
+      <h3 style="--i:3">Datacenter</h3>
+      <div class="slip-row" style="--i:4"><span>Cluster and options</span><span class="lead"></span><span>63</span></div>
+      <div class="slip-row" style="--i:5"><span>SDN</span><span class="lead"></span><span>46</span></div>
+      <div class="slip-row" style="--i:6"><span>Backups and jobs</span><span class="lead"></span><span>23</span></div>
+      <div class="slip-row" style="--i:7"><span>High availability</span><span class="lead"></span><span>20</span></div>
+      <div class="slip-row" style="--i:8"><span>Firewall</span><span class="lead"></span><span>5</span></div>
+      <h3 style="--i:9">Access</h3>
+      <div class="slip-row" style="--i:10"><span>Users and permissions</span><span class="lead"></span><span>54</span></div>
+      <h3 style="--i:11">Guests and storage</h3>
+      <div class="slip-row" style="--i:12"><span>Storage</span><span class="lead"></span><span>31</span></div>
+      <div class="slip-row" style="--i:13"><span>Paths for VMs only</span><span class="lead"></span><span>9</span></div>
+      <div class="slip-row" style="--i:14"><span>Paths for containers only</span><span class="lead"></span><span>9</span></div>
+      <div class="slip-row" style="--i:15"><span>Shared by guests and firewalls</span><span class="lead"></span><span>28</span></div>
+      <div class="slip-row sum" style="--i:16"><span>Total</span><span class="lead"></span><span>439</span></div>
+      <p class="slip-foot">Run it yourself: <a class="link" href="https://github.com/itsmaclol/Proxima/blob/main/Tools/apicheck.sh">Tools/apicheck.sh</a> reads the public API description from any node, no sign-in needed.</p>
+    </div>
+  </div>
+</section>
+
+<!-- How it works: one card, four fields -->
+<section aria-labelledby="h-connect">
+  <div class="strip">
+    <div class="field">
+      <h2 id="h-connect">Connected in a minute</h2>
+      <div class="field-card"><div class="cc" data-ui>
+        <div class="cc-title">Add a server</div>
+        <div class="cc-f"><label>Address</label><div>192.168.1.10</div></div>
+        <div class="cc-f"><label>Port</label><div>8006</div></div>
+        <div class="cc-f"><label>Name</label><div class="empty">homelab</div></div>
+        <div class="cc-row"><span class="cc-btn">Cancel</span><span class="cc-btn go">Continue</span></div>
+      </div></div>
+      <p class="clause">First, the address you use for the web UI.</p>
+    </div>
+    <div class="field">
+      <div class="field-card"><div class="cc" data-ui>
+        <div class="cc-title">Is this your server?</div>
+        <div class="cc-f"><label>Address</label><div>192.168.1.10:8006</div></div>
+        <div class="cc-f"><label>Certificate fingerprint (SHA-256)</label><div class="fp">5F:9E:2E:3C:60:98:1F:01:DA:87:1D:D9:AE:4B:A1:52</div></div>
+        <div class="cc-row"><span class="cc-btn">Cancel</span><span class="cc-btn go">Trust</span></div>
+      </div></div>
+      <p class="clause">Then check its certificate, once.</p>
+    </div>
+    <div class="field">
+      <div class="field-card"><div class="cc" data-ui>
+        <div class="cc-title">Sign in to homelab</div>
+        <div class="cc-f"><label>User</label><div>root</div></div>
+        <div class="cc-f"><label>Realm</label><div>Linux PAM</div></div>
+        <div class="cc-f"><label>Password</label><div>••••••••••</div></div>
+        <div class="cc-check"><i><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5.2l2 2 4-4.4"/></svg></i>Save in Keychain</div>
+        <div class="cc-row"><span class="cc-btn go">Sign In</span></div>
+      </div></div>
+      <p class="clause">Then sign in as yourself, with two-factor if you use it.</p>
+    </div>
+    <div class="field">
+      <div class="field-card"><div class="cc" data-ui>
+        <div class="cc-done">
+          <span class="pill run" style="justify-self:start">Connected</span>
+          <div class="big">homelab</div>
+          <div class="meta">Proxmox VE 9.2 · 2 nodes</div>
+          <div class="meta">12 of 16 guests running · 2 problems</div>
+        </div>
+      </div></div>
+      <p class="clause">And the whole cluster is on your Mac.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="gap wrap" aria-labelledby="h-faq">
+  <div class="faq">
+    <h2 id="h-faq" class="rise">Questions</h2>
+    <div class="faq-list">
+      <details name="faq" id="q-open" class="rise"><summary>Why does macOS say it can't verify Proxima?<span class="plus" aria-hidden="true"></span></summary>
+        <div class="answer"><p>This build is signed but not yet notarized by Apple, so macOS stops it the first time. Click Done, open System Settings → Privacy &amp; Security, scroll down and click Open Anyway next to the Proxima message. You only do this once.</p><p>From Terminal, <code>xattr -dr com.apple.quarantine /Applications/Proxima.app</code> does the same.</p></div></details>
+      <details name="faq" class="rise"><summary>Which Macs and which Proxmox versions?<span class="plus" aria-hidden="true"></span></summary>
+        <div class="answer"><p>Any Mac on macOS 26 Tahoe or later, Intel or Apple silicon. It's built and tested against Proxmox VE 9.2, and talks to the same API the web UI uses, on port 8006.</p></div></details>
+      <details name="faq" class="rise"><summary>Where does my password go?<span class="plus" aria-hidden="true"></span></summary>
+        <div class="answer"><p>Only to your server. If you tick Save in Keychain it's stored in your Mac's own Keychain. Proxima has no account, no analytics and no server of its own.</p></div></details>
+      <details name="faq" class="rise"><summary>Do I need to install anything on the server?<span class="plus" aria-hidden="true"></span></summary>
+        <div class="answer"><p>No. Proxima uses the standard Proxmox API. It checks the server's certificate fingerprint the first time you connect and warns you if it ever changes.</p></div></details>
+      <details name="faq" class="rise"><summary>Can I use API tokens or two-factor?<span class="plus" aria-hidden="true"></span></summary>
+        <div class="answer"><p>Yes: API tokens, authenticator apps, Yubico OTP and recovery keys all work. Security keys (WebAuthn) only work in a browser, so use another factor for Proxima. Consoles need a password sign-in, as in the web UI.</p></div></details>
+      <details name="faq" class="rise"><summary>Is it free?<span class="plus" aria-hidden="true"></span></summary>
+        <div class="answer"><p>Yes, and open source under the MIT license. The code is on <a class="link" href="https://github.com/itsmaclol/Proxima">GitHub</a>, where you can also report problems.</p></div></details>
+      <details name="faq" class="rise"><summary>Is it made by Proxmox?<span class="plus" aria-hidden="true"></span></summary>
+        <div class="answer"><p>No. Proxima is an independent project and isn't affiliated with or endorsed by Proxmox Server Solutions GmbH.</p></div></details>
+    </div>
+  </div>
+</section>
+
+<!-- Closing call, over the tunnel of screens -->
+<section class="cta gap" aria-labelledby="h-cta" style="margin-top: clamp(96px, 12vw, 200px)">
+  <video id="tunnel" autoplay muted loop playsinline preload="metadata" poster="media/tunnel-poster.jpg" aria-hidden="true">
+    <source src="media/tunnel.mp4" type="video/mp4">
+  </video>
+  <div class="cta-scrim"></div>
+  <div class="cta-inner">
+    <form class="cta-line" id="h-cta" action="https://github.com/itsmaclol/Proxima/releases/latest/download/Proxima.dmg" method="get" onsubmit="return false">
+      Manage <label class="vh" for="addr">Your server's address</label><input id="addr" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="your server"> from&nbsp;your&nbsp;Mac.
+    </form>
+    <a class="btn" id="cta-go" style="margin-top:36px" href="https://github.com/itsmaclol/Proxima/releases/latest/download/Proxima.dmg"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M10 3v10M5 9l5 5 5-5M4 17h12"/></svg>Download for Mac</a>
+    <p class="cta-after" id="cta-after">Then open Proxima, choose Add Server and enter your server's address. Version 1.0, 11 MB, for macOS 26.</p>
+  </div>
+  <button class="vbtn" type="button" data-toggle="tunnel">Pause background</button>
+</section>
+
+</main>
+
+<footer>
+  <div class="tiles">
+    <div class="tile t-statement">
+      <p>A native Mac app for Proxmox VE, made in the open.</p>
+      <p class="t-legal">MIT license. Proxmox is a trademark of Proxmox Server Solutions GmbH; Proxima isn't affiliated with or endorsed by it.</p>
+    </div>
+    <nav class="tile t-nav" aria-label="Links">
+      <ul>
+        <li><a class="link" href="https://github.com/itsmaclol/Proxima/releases/latest">Release notes</a></li>
+        <li><a class="link" href="https://github.com/itsmaclol/Proxima">Source code</a></li>
+        <li><a class="link" href="https://github.com/itsmaclol/Proxima/issues">Report a problem</a></li>
+        <li><a class="link" href="https://github.com/itsmaclol/Proxima/blob/main/LICENSE">License</a></li>
+      </ul>
+    </nav>
+    <div class="tile t-req"><b>Requirements</b>macOS 26 or later, Intel or Apple silicon. Proxmox VE 9.</div>
+    <div class="tile t-by"><a class="link" href="https://github.com/itsmaclol">Made by @itsmaclol</a></div>
+    <div class="tile t-word" aria-hidden="true"><span>Proxima</span></div>
+    <a class="tile t-cta" href="https://github.com/itsmaclol/Proxima/releases/latest/download/Proxima.dmg">
+      <span>Download Proxima for Mac</span>
+      <svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" aria-hidden="true"><path d="M16 48L48 16M22 16h26v26"/></svg>
+    </a>
+  </div>
+</footer>
+
+<script>
+(function () {
+  document.documentElement.classList.add("js");
+  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Headline rises once the font is ready.
+  var hero = document.querySelector(".hero");
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(function () {
+    requestAnimationFrame(function () { hero.classList.add("ready"); });
+  });
+
+  // Section parts rise as they arrive.
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+  }, { rootMargin: "0px 0px -8% 0px" });
+  document.querySelectorAll(".rise, .slip").forEach(function (el) { io.observe(el); });
+
+  // Videos: play only on screen, never with reduced motion, and each has its own pause.
+  document.querySelectorAll("video").forEach(function (v) {
+    v.dataset.user = "play";
+    if (reduce) { v.removeAttribute("autoplay"); v.pause(); v.dataset.user = "pause"; }
+    new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (e.isIntersecting && v.dataset.user === "play") v.play().catch(function () {});
+        else v.pause();
+      });
+    }).observe(v);
+  });
+  document.querySelectorAll("[data-toggle]").forEach(function (b) {
+    var v = document.getElementById(b.dataset.toggle);
+    var label = b.textContent.replace(/^Pause\s*/, "");
+    var sync = function () { b.textContent = (v.dataset.user === "play" ? "Pause" : "Play") + (label ? " " + label : ""); };
+    sync();
+    b.addEventListener("click", function () {
+      v.dataset.user = v.dataset.user === "play" ? "pause" : "play";
+      if (v.dataset.user === "play") v.play().catch(function () {}); else v.pause();
+      sync();
+    });
+  });
+
+  // The live guest list.
+  var VM = '<svg viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="1" width="14" height="9" rx="1.5"/><path d="M5 13h6"/></svg>';
+  var CT = '<svg viewBox="0 0 16 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1l6 3v6l-6 3-6-3V4z"/><path d="M2 4l6 3 6-3M8 7v6"/></svg>';
+  var guests = [
+    { id: 100, name: "web-frontend", vm: true, on: true, up: "Up 12d 4h", cpu: "4%", mem: "1.9 GiB", os: "Ubuntu 24.04", boot: "Yes", bak: "Yesterday, nas-backup" },
+    { id: 101, name: "db-primary", vm: true, on: true, up: "Up 28d 6h", cpu: "16%", mem: "14.6 GiB", os: "Debian 13", boot: "Yes", bak: "Yesterday, nas-backup" },
+    { id: 102, name: "win11-workstation", vm: true, on: false, cpu: "8 cores", mem: "16 GiB", os: "Windows 11", boot: "No", bak: "Not in any backup job" },
+    { id: 103, name: "k3s-node-1", vm: true, on: true, up: "Up 6d 2h", cpu: "11%", mem: "5.2 GiB", os: "Ubuntu 24.04", boot: "Yes", bak: "Yesterday, nas-backup" },
+    { id: 105, name: "home-assistant", vm: true, on: true, up: "Up 3d 9h", cpu: "3%", mem: "2.1 GiB", os: "Home Assistant OS", boot: "Yes", bak: "Yesterday, nas-backup" },
+    { id: 200, name: "pihole", vm: false, on: true, up: "Up 2d 6h", cpu: "13%", mem: "254 MiB", os: "Debian 12", boot: "Yes", bak: "Yesterday, nas-backup" },
+    { id: 201, name: "nginx-proxy", vm: false, on: true, up: "Up 2d 6h", cpu: "2%", mem: "88 MiB", os: "Alpine 3.20", boot: "Yes", bak: "Yesterday, nas-backup" },
+    { id: 202, name: "jellyfin", vm: false, on: true, up: "Up 9h 12m", cpu: "21%", mem: "1.4 GiB", os: "Debian 12", boot: "Yes", bak: "Yesterday, nas-backup" },
+    { id: 203, name: "gitea", vm: false, on: false, cpu: "2 cores", mem: "1 GiB", os: "Alpine 3.20", boot: "No", bak: "Yesterday, nas-backup" }
+  ];
+  var list = document.getElementById("guest-list");
+  var sel = guests[1], busy = false, since = {}, timer;
+  var $ = function (id) { return document.getElementById(id); };
+  function fmt(s) { return s < 60 ? "Up " + s + "s" : "Up " + Math.floor(s / 60) + "m " + (s % 60) + "s"; }
+  function render() {
+    list.innerHTML = "";
+    guests.forEach(function (g) {
+      var b = document.createElement("button");
+      b.type = "button"; b.setAttribute("role", "listitem");
+      b.className = "g-row" + (g.on ? " on" : "") + (g.pending ? " busy" : "");
+      b.setAttribute("aria-current", g === sel ? "true" : "false");
+      b.setAttribute("aria-label", g.name + ", " + (g.vm ? "VM " : "container ") + g.id + ", " + (g.on ? "running" : "stopped"));
+      b.innerHTML = '<span class="g-ico">' + (g.vm ? VM : CT) + '<span class="dot"></span></span><span class="nm">' + g.name + '</span><span class="id">' + g.id + "</span>";
+      b.addEventListener("click", function () { sel = g; render(); });
+      list.appendChild(b);
+    });
+    $("gm-name").textContent = sel.name;
+    $("gm-sub").textContent = (sel.vm ? "Virtual machine " : "Container ") + sel.id + " on pve1";
+    var st = $("gm-state");
+    st.className = "pill " + (sel.pending ? "" : sel.on ? "run" : "stop");
+    st.textContent = sel.pending ? (sel.on ? "Stopping…" : "Starting…") : sel.on ? "Running" : "Stopped";
+    $("gm-up").textContent = sel.on ? (since[sel.id] != null ? fmt(since[sel.id]) : sel.up) : "Not running";
+    $("gm-cpu").textContent = sel.on ? sel.cpu : "–";
+    $("gm-mem").textContent = sel.on ? sel.mem : "–";
+    $("gm-os").textContent = sel.os;
+    $("gm-boot").textContent = sel.boot;
+    $("gm-bak").textContent = sel.bak;
+    $("gm-start").disabled = sel.on || busy;
+    $("gm-stop").disabled = !sel.on || busy;
+  }
+  function run(g, start) {
+    if (busy) return;
+    busy = true; g.pending = true; render();
+    var task = $("gm-task"), what = (start ? "Start " : "Shut down ") + (g.vm ? "VM " : "CT ") + g.id;
+    task.hidden = false;
+    task.innerHTML = '<span class="spin"></span>' + what;
+    setTimeout(function () {
+      g.pending = false; g.on = start; busy = false;
+      if (start) { since[g.id] = 0; if (!g.cpu.endsWith("%")) { g.cpu = "6%"; g.mem = g.vm ? "3.4 GiB" : "182 MiB"; } }
+      else { delete since[g.id]; }
+      task.innerHTML = '<span class="ok"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5.2l2 2 4-4.4"/></svg></span>' + what + " · OK";
+      render();
+      setTimeout(function () { task.hidden = true; }, 2600);
+    }, reduce ? 500 : 1600);
+  }
+  $("gm-start").addEventListener("click", function () { run(sel, true); });
+  $("gm-stop").addEventListener("click", function () { run(sel, false); });
+  timer = setInterval(function () {
+    Object.keys(since).forEach(function (k) { since[k]++; });
+    if (since[sel.id] != null) $("gm-up").textContent = fmt(since[sel.id]);
+  }, 1000);
+  render();
+
+  // The live task row: follow the log, then finish it.
+  var pct = 41, logBtn = $("lt-log"), logEl = $("lt-text"), fin = $("lt-finish");
+  logBtn.addEventListener("click", function () {
+    logEl.hidden = !logEl.hidden;
+    logBtn.setAttribute("aria-expanded", String(!logEl.hidden));
+  });
+  fin.addEventListener("click", function () {
+    pct = 100; $("lt-bar").style.width = "100%";
+    $("lt-sub").textContent = "pve1 · finished in 41 s · OK";
+    $("lt-icon").outerHTML = '<span class="t-ok" aria-hidden="true"><svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 5.2l2 2 4-4.4"/></svg></span>';
+    logEl.textContent += "\nINFO: 100% (32.0 GiB of 32.0 GiB) in 41s, read: 798.4 MiB/s, write: 312.9 MiB/s\nINFO: Finished Backup of VM 101 (00:00:41)\nINFO: Backup job finished successfully\nTASK OK";
+    fin.disabled = true; fin.textContent = "Done";
+  });
+
+  // The annotated sidebar: a note lights its row, and a row lights its note.
+  var idx = document.getElementById("index");
+  function light(key, on) {
+    idx.querySelectorAll('[data-key="' + key + '"]').forEach(function (el) { el.classList.toggle(el.classList.contains("note") ? "active" : "hot", on); });
+  }
+  idx.querySelectorAll(".note, .s-row[data-key]").forEach(function (el) {
+    var k = el.dataset.key;
+    el.addEventListener("mouseenter", function () { light(k, true); });
+    el.addEventListener("mouseleave", function () { light(k, false); });
+    if (el.classList.contains("note")) {
+      el.tabIndex = 0;
+      el.addEventListener("focus", function () { light(k, true); });
+      el.addEventListener("blur", function () { light(k, false); });
+    }
+  });
+
+  // Each note sits level with the row it explains, below the heading and never on top of the note above.
+  function placeNotes() {
+    var wide = innerWidth > 860, h2 = idx.querySelector("h2");
+    [".notes-l", ".notes-r"].forEach(function (sel) {
+      var col = idx.querySelector(sel), floor = sel === ".notes-l" ? h2.offsetTop + h2.offsetHeight + 20 : 0;
+      col.querySelectorAll(".note").forEach(function (n) {
+        if (!wide) { n.style.top = ""; return; }
+        var row = idx.querySelector('.s-row[data-key="' + n.dataset.key + '"]');
+        var t = Math.max(row.offsetTop + row.offsetHeight / 2 - 20, floor);
+        n.style.top = (t - col.offsetTop) + "px";
+        floor = t + n.offsetHeight + 12;
+      });
+    });
+  }
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(placeNotes);
+  addEventListener("resize", placeNotes);
+
+  // The closing sentence repeats the address you typed.
+  var addr = $("addr"), after = $("cta-after");
+  addr.addEventListener("input", function () {
+    var v = addr.value.trim().replace(/[<>&"]/g, "");
+    after.textContent = v
+      ? "Then open Proxima, choose Add Server and enter " + v + (v.indexOf(":") > -1 ? "" : ":8006") + ". Version 1.0, 11 MB, for macOS 26."
+      : "Then open Proxima, choose Add Server and enter your server's address. Version 1.0, 11 MB, for macOS 26.";
+  });
+  addr.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); $("cta-go").click(); } });
+})();
+</script>
+</body>
+</html>

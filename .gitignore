@@ -14,3 +14,7 @@ MockPVE/certs/
 MockPVE/seed-users.json
 
 .DS_Store
+
+# Design tooling working files
+.taste-skill/
+.claude/
