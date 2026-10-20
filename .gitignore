@@ -1,0 +1,16 @@
+# Build output
+.build/
+DerivedData/
+
+# Xcode per-user state
+xcuserdata/
+*.xcuserstate
+
+# Python caches
+__pycache__/
+
+# The mock server makes its own certificate, private key and test logins on first run.
+MockPVE/certs/
+MockPVE/seed-users.json
+
+.DS_Store
