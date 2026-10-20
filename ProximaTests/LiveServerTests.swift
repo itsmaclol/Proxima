@@ -3,7 +3,7 @@ import Testing
 @testable import Proxima
 
 /// Talks to a real Proxmox server without signing in. Opt in with
-/// `TEST_RUNNER_PROXIMA_LIVE_HOST=192.168.100.50 xcodebuild test …`.
+/// `TEST_RUNNER_PROXIMA_LIVE_HOST=192.168.1.10 xcodebuild test …`.
 @Suite(.enabled(if: ProcessInfo.processInfo.environment["PROXIMA_LIVE_HOST"] != nil, "Set PROXIMA_LIVE_HOST to run"))
 struct LiveServer {
     private var server: ServerProfile {

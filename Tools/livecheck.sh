@@ -1,7 +1,7 @@
 #!/bin/zsh
 # Checks a Proxmox server with Proxima's own networking code, without signing in:
 # certificate pinning, realms, 401 handling and error decoding. Doesn't need the app's Local Network permission.
-# Usage: Tools/livecheck.sh 192.168.100.50   (or host:port)
+# Usage: Tools/livecheck.sh 192.168.1.10   (or host:port)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 [[ $# -ge 1 ]] || { echo "usage: $0 <host[:port]>"; exit 2; }

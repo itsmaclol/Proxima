@@ -1,52 +1,47 @@
 {
-  "fill" : {
-    "linear-gradient" : [
-      "display-p3:0.12941,0.16078,0.29020,1.00000",
-      "display-p3:0.03137,0.04314,0.10196,1.00000"
+  "fill": {
+    "linear-gradient": [
+      "display-p3:0.42000,0.30000,0.98000,1.00000",
+      "display-p3:0.11000,0.07000,0.36000,1.00000"
     ]
   },
-  "groups" : [
+  "groups": [
     {
-      "layers" : [
+      "layers": [
         {
-          "glass" : true,
-          "image-name" : "planet.svg",
-          "name" : "planet"
-        },
-        {
-          "glass" : true,
-          "image-name" : "orbit.svg",
-          "name" : "orbit"
+          "glass": false,
+          "image-name": "leds.svg",
+          "name": "leds"
         }
       ],
-      "shadow" : {
-        "kind" : "neutral",
-        "opacity" : 0.5
+      "shadow": {
+        "kind": "layer-color",
+        "opacity": 0.5
       },
-      "translucency" : {
-        "enabled" : true,
-        "value" : 0.35
+      "translucency": {
+        "enabled": false,
+        "value": 0.5
       }
     },
     {
-      "layers" : [
+      "layers": [
         {
-          "glass" : true,
-          "image-name" : "star.svg",
-          "name" : "star"
+          "glass": true,
+          "image-name": "rack.svg",
+          "name": "rack"
         }
       ],
-      "shadow" : {
-        "kind" : "layer-color",
-        "opacity" : 0.6
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
       },
-      "translucency" : {
-        "enabled" : false,
-        "value" : 0.5
+      "translucency": {
+        "enabled": true,
+        "value": 0.4
       }
     }
   ],
-  "supported-platforms" : {
-    "squares" : "shared"
+  "supported-platforms": {
+    "squares": "shared"
   }
 }
