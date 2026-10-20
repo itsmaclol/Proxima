@@ -416,6 +416,17 @@ struct APIColumn: Identifiable {
     }
 }
 
+/// How a list deletes one of its rows; the action asks for confirmation itself.
+struct Deletion {
+    var title = "Delete…"
+    let run: () -> Void
+}
+
+extension FocusedValues {
+    /// Deleting the selected row of the list that has keyboard focus, for the toolbar's trash button.
+    @Entry var deletion: Deletion?
+}
+
 /// A table bound to one API list endpoint; reloads whenever something changes on the server.
 struct ResourceList<Menu: View>: View {
     @Environment(Session.self) private var session
@@ -429,6 +440,9 @@ struct ResourceList<Menu: View>: View {
     var transform: ([JSONObject]) -> [JSONObject] = { $0 }
     var open: ((Row) -> Void)?
     @ViewBuilder var menu: (Row) -> Menu
+    /// Deleting a row, or nil for rows that can't be deleted: ends the context menu, and runs from the Delete key,
+    /// Edit → Delete and the toolbar's trash button.
+    var delete: ((Row) -> Deletion?)?
 
     @State private var rows: [Row] = []
     @State private var loaded = false
@@ -436,6 +450,7 @@ struct ResourceList<Menu: View>: View {
     @State private var selection: Row.ID?
 
     var body: some View {
+        let deletion = rows.first { $0.id == selection }.flatMap { delete?($0) }
         Loadable(loading: !loaded, error: error, isEmpty: rows.isEmpty, emptyTitle: emptyTitle, emptySymbol: emptySymbol,
                  emptyMessage: emptyMessage, retry: { Task { await load() } }) {
             Table(rows, selection: $selection) {
@@ -450,10 +465,19 @@ struct ResourceList<Menu: View>: View {
                 }
             }
             .contextMenu(forSelectionType: Row.ID.self) { ids in
-                if let id = ids.first, let row = rows.first(where: { $0.id == id }) { menu(row) }
+                if let id = ids.first, let row = rows.first(where: { $0.id == id }) {
+                    menu(row)
+                    if let deletion = delete?(row) {
+                        // A menu holding only this item would otherwise open on a separator.
+                        if Menu.self != EmptyView.self { Divider() }
+                        Button(deletion.title, role: .destructive, action: deletion.run)
+                    }
+                }
             } primaryAction: { ids in
                 if let id = ids.first, let row = rows.first(where: { $0.id == id }) { open?(row) }
             }
+            .onDeleteCommand(perform: deletion?.run)
+            .focusedValue(\.deletion, deletion)
         }
         .task(id: "\(path)\(query)\(session.revision)") { await load() }
     }

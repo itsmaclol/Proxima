@@ -49,8 +49,8 @@ struct BackupJobsView: View {
                     let enabled = row.json["enabled"] == nil || row.json.bool("enabled")
                     Task { await session.run(enabled ? "Disable the job" : "Enable the job", .put, "/cluster/backup/\(row.id.enc)", ["enabled": enabled ? "0" : "1"]) }
                 }
-                Divider()
-                Button("Delete…", role: .destructive) { session.confirmDelete("Delete this backup job?", message: "Existing backups stay.", path: "/cluster/backup/\(row.id.enc)") }
+            } delete: { row in
+                Deletion { session.confirmDelete("Delete this backup job?", message: "Existing backups stay.", path: "/cluster/backup/\(row.id.enc)") }
             }
         }
         .task(id: session.revision) {
@@ -238,8 +238,8 @@ struct ReplicationList: View {
                 Button(row.json.bool("disable") ? "Enable" : "Disable") {
                     Task { await session.run("Change the replication job", .put, "/cluster/replication/\(row.id.enc)", ["disable": row.json.bool("disable") ? "0" : "1"]) }
                 }
-                Divider()
-                Button("Delete…", role: .destructive) { session.confirmDelete("Delete replication job \(row.id)?", path: "/cluster/replication/\(row.id.enc)") }
+            } delete: { row in
+                Deletion { session.confirmDelete("Delete replication job \(row.id)?", path: "/cluster/replication/\(row.id.enc)") }
             }
         }
         .task(id: session.revision) { await loadStatus() }
@@ -305,8 +305,8 @@ struct HAView: View {
                              emptyMessage: "Add a guest so the cluster restarts it elsewhere if its node goes down.", open: { editing = .some($0) }) { row in
                     Button("Edit…") { editing = .some(row) }
                     Button("Migrate…") { migrating = row }
-                    Divider()
-                    Button("Remove…", role: .destructive) { session.confirmDelete("Remove \(row.id) from HA?", message: "The guest keeps running; it just isn't managed anymore.", path: "/cluster/ha/resources/\(row.id.enc)") }
+                } delete: { row in
+                    Deletion(title: "Remove…") { session.confirmDelete("Remove \(row.id) from HA?", message: "The guest keeps running; it just isn't managed anymore.", path: "/cluster/ha/resources/\(row.id.enc)") }
                 }
             case "rules":
                 HARulesSection()

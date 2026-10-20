@@ -420,9 +420,8 @@ private struct NodeNetworkView: View {
                                    APIColumn("Comment", key: "comments", width: 200)],
                          emptyTitle: "No interfaces", emptySymbol: "network", open: { editing = $0 }) { row in
                 Button("Edit…") { editing = row }
-                if row["type"] != "eth" {
-                    Button("Remove…", role: .destructive) { session.confirmDelete("Remove \(row.id)?", message: "Takes effect after Apply Configuration.", path: "\(path)/\(row.id.enc)") }
-                }
+            } delete: { row in
+                row["type"] == "eth" ? nil : Deletion(title: "Remove…") { session.confirmDelete("Remove \(row.id)?", message: "Takes effect after Apply Configuration.", path: "\(path)/\(row.id.enc)") }
             }
         }
         .sheet(item: Binding(get: { adding.map { Kind(type: $0) } }, set: { adding = $0?.type })) { kind in
@@ -512,16 +511,16 @@ private struct NodeDisksView: View {
                              columns: [APIColumn("Volume group", key: "name", width: 160), APIColumn("Size", width: 100) { Format.bytes($0.int64("size")) },
                                        APIColumn("Free", width: 100) { Format.bytes($0.int64("free")) }],
                              emptyTitle: "No LVM volume groups", emptySymbol: "cylinder.split.1x2",
-                             transform: { list in list.first?.objects("children") ?? list }) { row in
-                    Button("Destroy…", role: .destructive) { destroying = Destroy(kind: "lvm", name: row.id) }
+                             transform: { list in list.first?.objects("children") ?? list }) { _ in } delete: { row in
+                    Deletion(title: "Destroy…") { destroying = Destroy(kind: "lvm", name: row.id) }
                 }
             case "lvmthin":
                 ResourceList(path: path + "/lvmthin", id: { $0.string("lv") ?? "" },
                              columns: [APIColumn("Thin pool", key: "lv", width: 140), APIColumn("Volume group", key: "vg", width: 120),
                                        APIColumn("Size", width: 100) { Format.bytes($0.int64("lv_size")) }, APIColumn("Used", width: 100) { Format.bytes($0.int64("used")) },
                                        APIColumn("Metadata", width: 100) { Format.bytes($0.int64("metadata_used")) }],
-                             emptyTitle: "No thin pools", emptySymbol: "cylinder") { row in
-                    Button("Destroy…", role: .destructive) { destroying = Destroy(kind: "lvmthin", name: row.id, volumeGroup: row["vg"]) }
+                             emptyTitle: "No thin pools", emptySymbol: "cylinder") { _ in } delete: { row in
+                    Deletion(title: "Destroy…") { destroying = Destroy(kind: "lvmthin", name: row.id, volumeGroup: row["vg"]) }
                 }
             case "directory":
                 ResourceList(path: path + "/directory", id: { $0.string("path") ?? "" },
@@ -529,7 +528,8 @@ private struct NodeDisksView: View {
                                        APIColumn("File system", key: "type", width: 90), APIColumn("Options", key: "options", width: 200)],
                              emptyTitle: "No directory storages", emptySymbol: "folder") { row in
                     // The API names a directory storage by its mount point's last component (/mnt/pve/backups → backups).
-                    Button("Destroy…", role: .destructive) { destroying = Destroy(kind: "directory", name: String(row.id.split(separator: "/").last ?? "")) }
+                } delete: { row in
+                    Deletion(title: "Destroy…") { destroying = Destroy(kind: "directory", name: String(row.id.split(separator: "/").last ?? "")) }
                 }
             case "zfs":
                 ResourceList(path: path + "/zfs", id: { $0.string("name") ?? "" },
@@ -539,8 +539,8 @@ private struct NodeDisksView: View {
                                        APIColumn("Dedup", width: 60) { $0.string("dedup").map { "\($0)×" } ?? "" }],
                              emptyTitle: "No ZFS pools", emptySymbol: "circle.grid.2x2", open: { zfsPool = $0.id }) { row in
                     Button("Show Details") { zfsPool = row.id }
-                    Divider()
-                    Button("Destroy…", role: .destructive) { destroying = Destroy(kind: "zfs", name: row.id) }
+                } delete: { row in
+                    Deletion(title: "Destroy…") { destroying = Destroy(kind: "zfs", name: row.id) }
                 }
             default:
                 ResourceList(path: path + "/list", id: { $0.string("devpath") ?? "" },

@@ -18,6 +18,7 @@ struct RootView: View {
 
 struct MainView: View {
     @Environment(Session.self) private var session
+    @FocusedValue(\.deletion) private var deletion
 
     var body: some View {
         @Bindable var session = session
@@ -32,6 +33,14 @@ struct MainView: View {
                 .overlay(alignment: .top) {
                     if let problem = session.problem {
                         ConnectionBanner(message: problem)
+                    }
+                }
+                .toolbar {
+                    if let deletion {
+                        ToolbarItem(placement: .primaryAction) {
+                            Button(deletion.title, systemImage: "trash", role: .destructive, action: deletion.run)
+                                .help(deletion.title)
+                        }
                     }
                 }
         }

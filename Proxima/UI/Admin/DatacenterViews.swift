@@ -43,8 +43,8 @@ struct StorageConfigView: View {
                     Task { await session.run(row.json.bool("disable") ? "Enable \(row.id)" : "Disable \(row.id)", .put, "/storage/\(row.id.enc)",
                                              ["disable": row.json.bool("disable") ? "0" : "1"]) }
                 }
-                Divider()
-                Button("Remove…", role: .destructive) {
+            } delete: { row in
+                Deletion(title: "Remove…") {
                     session.confirmDelete("Remove storage \(row.id)?", message: "Only the configuration is removed; data on the disk or server stays.", path: "/storage/\(row.id.enc)")
                 }
             }
@@ -230,8 +230,8 @@ struct SDNView: View {
                     Button("Edit…") { edit(row) }
                     Button("Subnets") { vnet = row.id; section = "subnets" }
                     Button("Firewall…") { firewall = row.id }
-                    Divider()
-                    Button("Delete…", role: .destructive) { session.confirmDelete("Delete VNet \(row.id)?", path: "/cluster/sdn/vnets/\(row.id.enc)") }
+                } delete: { row in
+                    Deletion { session.confirmDelete("Delete VNet \(row.id)?", path: "/cluster/sdn/vnets/\(row.id.enc)") }
                 }
             case "subnets":
                 if let vnet {
@@ -243,8 +243,8 @@ struct SDNView: View {
                                            }],
                                  emptyTitle: "No subnets", emptySymbol: "number", open: { edit($0) }) { row in
                         Button("Edit…") { edit(row) }
-                        Divider()
-                        Button("Delete…", role: .destructive) { session.confirmDelete("Delete subnet \(row.id)?", path: "/cluster/sdn/vnets/\(vnet.enc)/subnets/\(row.id.enc)") }
+                    } delete: { row in
+                        Deletion { session.confirmDelete("Delete subnet \(row.id)?", path: "/cluster/sdn/vnets/\(vnet.enc)/subnets/\(row.id.enc)") }
                     }
                     .id(vnet)
                 } else {
@@ -260,8 +260,8 @@ struct SDNView: View {
                              emptyTitle: "No controllers", emptySymbol: "point.3.filled.connected.trianglepath.dotted",
                              emptyMessage: "EVPN zones need an EVPN controller; BGP and IS-IS controllers advertise routes to your network.", open: { edit($0) }) { row in
                     Button("Edit…") { edit(row) }
-                    Divider()
-                    Button("Delete…", role: .destructive) { session.confirmDelete("Delete controller \(row.id)?", path: "/cluster/sdn/controllers/\(row.id.enc)") }
+                } delete: { row in
+                    Deletion { session.confirmDelete("Delete controller \(row.id)?", path: "/cluster/sdn/controllers/\(row.id.enc)") }
                 }
             case "ipams":
                 ResourceList(path: "/cluster/sdn/ipams", id: { $0.string("ipam") ?? "" },
@@ -273,17 +273,17 @@ struct SDNView: View {
                         Button("Show Addresses…") { ipam = row.id }
                     } else {
                         Button("Edit…") { edit(row) }
-                        Divider()
-                        Button("Delete…", role: .destructive) { session.confirmDelete("Delete IPAM \(row.id)?", path: "/cluster/sdn/ipams/\(row.id.enc)") }
                     }
+                } delete: { row in
+                    row["type"] == "pve" ? nil : Deletion { session.confirmDelete("Delete IPAM \(row.id)?", path: "/cluster/sdn/ipams/\(row.id.enc)") }
                 }
             case "dns":
                 ResourceList(path: "/cluster/sdn/dns", id: { $0.string("dns") ?? "" },
                              columns: [APIColumn("DNS", key: "dns", width: 130), APIColumn("Type", width: 90) { Self.typeNames[$0.string("type") ?? ""] ?? ($0.string("type") ?? "") }, APIColumn("URL", key: "url", width: 280), APIColumn("TTL", key: "ttl", width: 70)],
                              emptyTitle: "No DNS servers", emptySymbol: "globe", emptyMessage: "Register guest names in PowerDNS as they get addresses.", open: { edit($0) }) { row in
                     Button("Edit…") { edit(row) }
-                    Divider()
-                    Button("Delete…", role: .destructive) { session.confirmDelete("Delete DNS server \(row.id)?", path: "/cluster/sdn/dns/\(row.id.enc)") }
+                } delete: { row in
+                    Deletion { session.confirmDelete("Delete DNS server \(row.id)?", path: "/cluster/sdn/dns/\(row.id.enc)") }
                 }
             case "prefixlists":
                 SDNPrefixLists()
@@ -297,8 +297,8 @@ struct SDNView: View {
                              emptyTitle: "No zones", emptySymbol: "square.dashed",
                              emptyMessage: "A zone defines how VNets are separated: plain bridge, VLAN, QinQ, VXLAN or EVPN.", open: { edit($0) }) { row in
                     Button("Edit…") { edit(row) }
-                    Divider()
-                    Button("Delete…", role: .destructive) { session.confirmDelete("Delete zone \(row.id)?", path: "/cluster/sdn/zones/\(row.id.enc)") }
+                } delete: { row in
+                    Deletion { session.confirmDelete("Delete zone \(row.id)?", path: "/cluster/sdn/zones/\(row.id.enc)") }
                 }
             }
         }
@@ -554,8 +554,8 @@ private struct MetricServers: View {
                                    APIColumn("Server", key: "server", width: 180),
                                    APIColumn("Port", key: "port", width: 60), APIColumn("Enabled", width: 60) { $0.bool("disable") ? "No" : "Yes" }],
                          emptyTitle: "No metric servers", emptySymbol: "chart.xyaxis.line",
-                         emptyMessage: "Send node and guest metrics to InfluxDB or Graphite for long-term dashboards.") { row in
-                Button("Delete…", role: .destructive) { session.confirmDelete("Delete metric server \(row.id)?", path: "/cluster/metrics/server/\(row.id.enc)") }
+                         emptyMessage: "Send node and guest metrics to InfluxDB or Graphite for long-term dashboards.") { _ in } delete: { row in
+                Deletion { session.confirmDelete("Delete metric server \(row.id)?", path: "/cluster/metrics/server/\(row.id.enc)") }
             }
         }
         .sheet(item: Binding(get: { adding.map { MetricKind(type: $0) } }, set: { adding = $0?.type })) { kind in

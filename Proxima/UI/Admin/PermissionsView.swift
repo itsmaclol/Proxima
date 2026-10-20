@@ -59,8 +59,8 @@ struct PermissionsList: View {
                                    APIColumn("Propagate", width: 80) { $0.bool("propagate") ? "Yes" : "No" }],
                          emptyTitle: "No permissions here", emptySymbol: "key",
                          emptyMessage: path == nil ? nil : "Nobody has a role on this path directly.",
-                         transform: { list in path.map { p in list.filter { $0.string("path") == p } } ?? list }) { row in
-                Button("Remove…", role: .destructive) { remove(row) }
+                         transform: { list in path.map { p in list.filter { $0.string("path") == p } } ?? list }) { _ in } delete: { row in
+                Deletion(title: "Remove…") { remove(row) }
             }
         }
         .sheet(isPresented: $adding) { AddPermissionSheet(path: path) }
@@ -138,9 +138,8 @@ private struct UsersList: View {
                 Button("Change Password…") { password = row }
                 Button("Unlock Two-Factor") { Task { await session.run("Unlock two-factor for \(row.id)", .put, "/access/users/\(row.id.enc)/unlock-tfa") } }
                 Button("Show Permissions") { permissionsOf = row }
-                Divider()
-                Button("Delete…", role: .destructive) { session.confirmDelete("Delete user \(row.id)?", message: "Their API tokens and permissions are removed too.", path: "/access/users/\(row.id.enc)") }
-                    .disabled(row.id == "root@pam")
+            } delete: { row in
+                row.id == "root@pam" ? nil : Deletion { session.confirmDelete("Delete user \(row.id)?", message: "Their API tokens and permissions are removed too.", path: "/access/users/\(row.id.enc)") }
             }
         }
         .sheet(item: Binding(get: { editing.map { Edit(row: $0) } }, set: { editing = $0.map(\.row) })) { edit in
@@ -255,8 +254,8 @@ private struct TokensList: View {
                 Button("Edit…") { editing = row }
                 Button("Show Permissions") { permissionsOf = row }
                 Button("Regenerate Secret…") { regenerate(row) }
-                Divider()
-                Button("Delete…", role: .destructive) {
+            } delete: { row in
+                Deletion {
                     let user = row["user"] ?? "", token = row["tokenid"] ?? ""
                     session.confirmDelete("Delete token \(row.id)?", message: "Anything using it stops working immediately.",
                                           path: "/access/users/\(user.enc)/token/\(token.enc)")
@@ -468,9 +467,9 @@ private struct TwoFactorList: View {
                         Task { await session.run(enabled ? "Disable the second factor" : "Enable the second factor", .put, Self.path(row), ["enable": enabled ? "0" : "1"]) }
                     }
                 }
-                Divider()
-                Button("Remove…", role: .destructive) {
-                    if owner.needsPassword {
+            } delete: { row in
+                Deletion(title: "Remove…") {
+                    if TFAOwner(session: session).needsPassword {
                         changing = Change(row: row, remove: true)
                     } else {
                         session.confirmDelete("Remove this \(row["type"] ?? "") factor for \(row["userid"] ?? "")?", path: Self.path(row))
@@ -702,7 +701,8 @@ private struct GroupsList: View {
                                    APIColumn("Comment", key: "comment", width: 260)],
                          emptyTitle: "No groups", emptySymbol: "person.3", open: { editing = .some($0) }) { row in
                 Button("Edit…") { editing = .some(row) }
-                Button("Delete…", role: .destructive) { session.confirmDelete("Delete group \(row.id)?", path: "/access/groups/\(row.id.enc)") }
+            } delete: { row in
+                Deletion { session.confirmDelete("Delete group \(row.id)?", path: "/access/groups/\(row.id.enc)") }
             }
         }
         .sheet(item: Binding(get: { editing.map { SimpleEdit(row: $0) } }, set: { editing = $0.map(\.row) })) { edit in
@@ -740,7 +740,8 @@ struct PoolsList: View {
                          open: { session.selection = .pool($0.id) }) { row in
                 Button("Open") { session.selection = .pool(row.id) }
                 Button("Edit…") { editing = .some(row) }
-                Button("Delete…", role: .destructive) { session.confirmDelete("Delete pool \(row.id)?", message: "Only empty pools can be deleted.", path: "/pools/\(row.id.enc)") }
+            } delete: { row in
+                Deletion { session.confirmDelete("Delete pool \(row.id)?", message: "Only empty pools can be deleted.", path: "/pools/\(row.id.enc)") }
             }
         }
         .sheet(item: Binding(get: { editing.map { SimpleEdit(row: $0) } }, set: { editing = $0.map(\.row) })) { edit in
@@ -779,10 +780,11 @@ private struct RolesList: View {
                          open: { if !$0.json.bool("special") { editing = .some($0) } }) { row in
                 if !row.json.bool("special") {
                     Button("Edit…") { editing = .some(row) }
-                    Button("Delete…", role: .destructive) { session.confirmDelete("Delete role \(row.id)?", path: "/access/roles/\(row.id.enc)") }
                 } else {
                     Text("Built-in roles can't be changed")
                 }
+            } delete: { row in
+                row.json.bool("special") ? nil : Deletion { session.confirmDelete("Delete role \(row.id)?", path: "/access/roles/\(row.id.enc)") }
             }
         }
         .sheet(item: Binding(get: { editing.map { SimpleEdit(row: $0) } }, set: { editing = $0.map(\.row) })) { edit in
@@ -827,9 +829,8 @@ private struct RealmsList: View {
                 if ["ldap", "ad"].contains(row["type"] ?? "") {
                     Button("Sync…") { syncing = row }
                 }
-                if !["pam", "pve"].contains(row.id) {
-                    Button("Delete…", role: .destructive) { session.confirmDelete("Delete realm \(row.id)?", message: "Users from this realm can't sign in anymore.", path: "/access/domains/\(row.id.enc)") }
-                }
+            } delete: { row in
+                ["pam", "pve"].contains(row.id) ? nil : Deletion { session.confirmDelete("Delete realm \(row.id)?", message: "Users from this realm can't sign in anymore.", path: "/access/domains/\(row.id.enc)") }
             }
             HStack {
                 Text("Scheduled Syncs").font(.headline)
@@ -855,8 +856,8 @@ private struct RealmsList: View {
                     Task { await session.run(enabled ? "Disable the sync job" : "Enable the sync job", .put, "/cluster/jobs/realm-sync/\(row.id.enc)",
                                              ["enabled": enabled ? "0" : "1", "schedule": row["schedule"] ?? ""]) }
                 }
-                Divider()
-                Button("Delete…", role: .destructive) { session.confirmDelete("Delete sync job \(row.id)?", path: "/cluster/jobs/realm-sync/\(row.id.enc)") }
+            } delete: { row in
+                Deletion { session.confirmDelete("Delete sync job \(row.id)?", path: "/cluster/jobs/realm-sync/\(row.id.enc)") }
             }
         }
         .sheet(item: $editing) { RealmEditor(row: $0) }

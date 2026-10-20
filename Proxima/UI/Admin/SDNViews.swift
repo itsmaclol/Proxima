@@ -500,8 +500,8 @@ struct SDNPrefixLists: View {
                                                }],
                                      emptyTitle: "No entries", emptySymbol: "list.number", open: { editing = .some($0) }) { row in
                             Button("Edit…") { editing = .some(row) }
-                            Divider()
-                            Button("Delete…", role: .destructive) { session.confirmDelete("Delete entry \(row.id)?", path: "/cluster/sdn/prefix-lists/\(selected.enc)/entries/\(row.id.enc)") }
+                        } delete: { row in
+                            Deletion { session.confirmDelete("Delete entry \(row.id)?", path: "/cluster/sdn/prefix-lists/\(selected.enc)/entries/\(row.id.enc)") }
                         }
                         .id(selected)
                     }
@@ -577,8 +577,8 @@ struct SDNRouteMaps: View {
                          emptyTitle: "No route maps", emptySymbol: "arrow.triangle.branch",
                          emptyMessage: "Filter or adjust the routes BGP and EVPN controllers exchange.", open: { editing = .some($0) }) { row in
                 Button("Edit…") { editing = .some(row) }
-                Divider()
-                Button("Delete…", role: .destructive) {
+            } delete: { row in
+                Deletion {
                     session.confirmDelete("Delete entry \(row["order"] ?? "") of \(row["route-map-id"] ?? "")?",
                                           path: "/cluster/sdn/route-maps/entries/\((row["route-map-id"] ?? "").enc)/entry/\((row["order"] ?? "").enc)")
                 }

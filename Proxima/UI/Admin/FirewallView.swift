@@ -478,7 +478,8 @@ private struct FirewallAliases: View {
                          emptyTitle: "No aliases", emptySymbol: "tag", emptyMessage: "Aliases give names to addresses, like nas = 192.168.1.20.",
                          open: { editing = .some($0) }) { row in
                 Button("Edit…") { editing = .some(row) }
-                Button("Delete…", role: .destructive) { session.confirmDelete("Delete alias \(row.id)?", path: "\(base)/aliases/\(row.id.enc)") }
+            } delete: { row in
+                Deletion { session.confirmDelete("Delete alias \(row.id)?", path: "\(base)/aliases/\(row.id.enc)") }
             }
         }
         .sheet(item: Binding(get: { editing.map { AliasEdit(row: $0) } }, set: { editing = $0.map(\.row) })) { edit in
@@ -546,8 +547,8 @@ private struct IPSets: View {
                                      columns: [APIColumn("Address", key: "cidr", width: 200, monospaced: true),
                                                APIColumn("Exclude", width: 70) { $0.bool("nomatch") ? "Yes" : "" },
                                                APIColumn("Comment", key: "comment", width: 260)],
-                                     emptyTitle: "Empty IP set", emptySymbol: "number") { row in
-                            Button("Remove…", role: .destructive) {
+                                     emptyTitle: "Empty IP set", emptySymbol: "number") { _ in } delete: { row in
+                            Deletion(title: "Remove…") {
                                 session.confirmDelete("Remove \(row.id) from \(selected)?", path: "\(base)/ipset/\(selected.enc)/\(row.id.enc)")
                             }
                         }

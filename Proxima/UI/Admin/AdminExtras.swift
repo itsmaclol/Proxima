@@ -61,10 +61,8 @@ struct NotificationsSection: View {
                 Button(row.json.bool("disable") ? "Enable" : "Disable") {
                     Task { await session.run("\(row.json.bool("disable") ? "Enable" : "Disable") \(row.id)", .put, Self.path(row), flipDisable(row)) }
                 }
-                if row["origin"] != "builtin" {
-                    Divider()
-                    Button("Delete…", role: .destructive) { session.confirmDelete("Delete target \(row.id)?", path: Self.path(row)) }
-                }
+            } delete: { row in
+                row["origin"] == "builtin" ? nil : Deletion { session.confirmDelete("Delete target \(row.id)?", path: Self.path(row)) }
             }
             SectionTitle(text: "Matchers")
             ResourceList(path: "/cluster/notifications/matchers", id: { $0.string("name") ?? "" },
@@ -76,10 +74,8 @@ struct NotificationsSection: View {
                 Button(row.json.bool("disable") ? "Enable" : "Disable") {
                     Task { await session.run("\(row.json.bool("disable") ? "Enable" : "Disable") \(row.id)", .put, "/cluster/notifications/matchers/\(row.id.enc)", flipDisable(row)) }
                 }
-                if row["origin"] != "builtin" {
-                    Divider()
-                    Button("Delete…", role: .destructive) { session.confirmDelete("Delete matcher \(row.id)?", path: "/cluster/notifications/matchers/\(row.id.enc)") }
-                }
+            } delete: { row in
+                row["origin"] == "builtin" ? nil : Deletion { session.confirmDelete("Delete matcher \(row.id)?", path: "/cluster/notifications/matchers/\(row.id.enc)") }
             }
         }
         .debugAction("add-smtp") { target = TargetEdit(kind: "smtp") }
@@ -261,8 +257,8 @@ struct HARulesSection: View {
                                        APIColumn("No failback", width: 90) { $0.bool("nofailback") ? "Yes" : "No" }, APIColumn("Comment", key: "comment", width: 200)],
                              emptyTitle: "No HA groups", emptySymbol: "list.bullet.indent", open: { editing = SimpleEdit(row: $0) }) { row in
                     Button("Edit…") { editing = SimpleEdit(row: row) }
-                    Divider()
-                    Button("Delete…", role: .destructive) { session.confirmDelete("Delete HA group \(row.id)?", path: "/cluster/ha/groups/\(row.id.enc)") }
+                } delete: { row in
+                    Deletion { session.confirmDelete("Delete HA group \(row.id)?", path: "/cluster/ha/groups/\(row.id.enc)") }
                 }
             } else {
                 ResourceList(path: "/cluster/ha/rules", id: { $0.string("rule") ?? "" },
@@ -279,8 +275,8 @@ struct HARulesSection: View {
                         let params = flipDisable(row).merging(["type": row["type"] ?? ""]) { $1 }
                         Task { await session.run("\(row.json.bool("disable") ? "Enable" : "Disable") \(row.id)", .put, "/cluster/ha/rules/\(row.id.enc)", params) }
                     }
-                    Divider()
-                    Button("Delete…", role: .destructive) { session.confirmDelete("Delete HA rule \(row.id)?", path: "/cluster/ha/rules/\(row.id.enc)") }
+                } delete: { row in
+                    Deletion { session.confirmDelete("Delete HA rule \(row.id)?", path: "/cluster/ha/rules/\(row.id.enc)") }
                 }
             }
         }
@@ -374,8 +370,8 @@ struct MappingsSection: View {
                              emptySymbol: ["pci": "rectangle.connected.to.line.below", "usb": "cable.connector"][kind] ?? "folder",
                              open: { editing = MappingEdit(kind: kind, row: $0) }) { row in
                     Button("Edit…") { editing = MappingEdit(kind: kind, row: row) }
-                    Divider()
-                    Button("Delete…", role: .destructive) { session.confirmDelete("Delete mapping \(row.id)?", path: "/cluster/mapping/\(kind)/\(row.id.enc)") }
+                } delete: { row in
+                    Deletion { session.confirmDelete("Delete mapping \(row.id)?", path: "/cluster/mapping/\(kind)/\(row.id.enc)") }
                 }
             }
         }
@@ -490,14 +486,14 @@ struct ACMESection: View {
             SectionTitle(text: "Accounts")
             ResourceList(path: "/cluster/acme/account", id: { $0.string("name") ?? "" }, columns: [APIColumn("Account", key: "name", width: 220)],
                          emptyTitle: "No ACME accounts", emptySymbol: "checkmark.seal",
-                         emptyMessage: "Register with Let's Encrypt to get trusted certificates for your nodes.") { row in
-                Button("Deactivate…", role: .destructive) { session.confirmDelete("Deactivate ACME account \(row.id)?", path: "/cluster/acme/account/\(row.id.enc)") }
+                         emptyMessage: "Register with Let's Encrypt to get trusted certificates for your nodes.") { _ in } delete: { row in
+                Deletion(title: "Deactivate…") { session.confirmDelete("Deactivate ACME account \(row.id)?", path: "/cluster/acme/account/\(row.id.enc)") }
             }
             SectionTitle(text: "Challenge plugins")
             ResourceList(path: "/cluster/acme/plugins", id: { $0.string("plugin") ?? "" },
                          columns: [APIColumn("Plugin", key: "plugin", width: 160), APIColumn("Type", width: 100) { $0.string("type") == "dns" ? "DNS" : "HTTP" }, APIColumn("DNS API", key: "api", width: 160)],
-                         emptyTitle: "No plugins", emptySymbol: "puzzlepiece", emptyMessage: "DNS plugins let you get certificates without opening port 80.") { row in
-                Button("Delete…", role: .destructive) { session.confirmDelete("Delete plugin \(row.id)?", path: "/cluster/acme/plugins/\(row.id.enc)") }
+                         emptyTitle: "No plugins", emptySymbol: "puzzlepiece", emptyMessage: "DNS plugins let you get certificates without opening port 80.") { _ in } delete: { row in
+                Deletion { session.confirmDelete("Delete plugin \(row.id)?", path: "/cluster/acme/plugins/\(row.id.enc)") }
             }
         }
         .debugAction("add-acme-plugin") { addingPlugin = true }
@@ -766,8 +762,8 @@ struct SDNFabrics: View {
                         Button(node) { editingNode = FabricNodeEdit(fabric: row.id, protocol: row["protocol"] ?? "openfabric", node: node) }
                     }
                 }
-                Divider()
-                Button("Delete…", role: .destructive) {
+            } delete: { row in
+                Deletion {
                     session.confirmDelete("Delete fabric \(row.id)?", message: "Its nodes leave it too. Apply the SDN changes afterwards.", path: "/cluster/sdn/fabrics/fabric/\(row.id.enc)")
                 }
             }
@@ -779,8 +775,8 @@ struct SDNFabrics: View {
                          emptyTitle: "No nodes in a fabric yet", emptySymbol: "server.rack",
                          emptyMessage: "Right-click a fabric to add nodes to it.", open: { editingNode = FabricNodeEdit(row: $0) }) { row in
                 Button("Edit…") { editingNode = FabricNodeEdit(row: row) }
-                Divider()
-                Button("Remove…", role: .destructive) {
+            } delete: { row in
+                Deletion(title: "Remove…") {
                     session.confirmDelete("Remove \(row["node_id"] ?? "") from \(row["fabric_id"] ?? "")?",
                                           path: "/cluster/sdn/fabrics/node/\((row["fabric_id"] ?? "").enc)/\((row["node_id"] ?? "").enc)")
                 }
@@ -912,8 +908,8 @@ struct CustomCPUModels: View {
                          emptyMessage: "Define a CPU with exactly the flags your guests need, for example to live-migrate between different hosts.",
                          open: { editing = .some($0) }) { row in
                 Button("Edit…") { editing = .some(row) }
-                Divider()
-                Button("Delete…", role: .destructive) {
+            } delete: { row in
+                Deletion {
                     session.confirmDelete("Delete CPU model \(row.id)?", message: "VMs using it can't start until they get another CPU type.",
                                           path: "/cluster/qemu/custom-cpu-models/\(row.id.enc)")
                 }
