@@ -12,6 +12,7 @@
   <img alt="macOS 26" src="https://img.shields.io/badge/macOS-26%20Tahoe-black?logo=apple">
   <img alt="Swift 6" src="https://img.shields.io/badge/Swift-6-F05138?logo=swift&logoColor=white">
   <img alt="Proxmox VE 8 and 9" src="https://img.shields.io/badge/Proxmox%20VE-8%20%7C%209-E57000?logo=proxmox&logoColor=white">
+  <img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue">
 </p>
 
 ![The Overview: live cluster load, what needs attention, backups and nodes](docs/screenshots/overview.png)
@@ -223,6 +224,10 @@ The same checks run as tests inside the app once Proxima is allowed in *Local Ne
 ```sh
 TEST_RUNNER_PROXIMA_LIVE_HOST=192.168.1.10 xcodebuild test -project Proxima.xcodeproj -scheme Proxima -only-testing:ProximaTests/LiveServer
 ```
+
+## License
+
+Proxima is released under the [MIT License](LICENSE).
 
 ## Disclaimer
 
